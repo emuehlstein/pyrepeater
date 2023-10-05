@@ -57,7 +57,7 @@ async def main():
                 if not _busy:
                     # log the change of state then set _busy to True
                     logger.info("Receiver is busy.")
-                    current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+                    current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
                     recorder = subprocess.Popen(
                         ["rec", "-q", "-c", "1", "-r", "8000", "recordings/{current_time}.wav}"]
                     )
