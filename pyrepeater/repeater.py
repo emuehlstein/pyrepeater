@@ -33,7 +33,7 @@ class Repeater:
             ser.setDTR(True)
             ser.setRTS(True)
             # sleep .5 for the relay to kick in
-            async.sleep(.5)
+            asyncio.sleep(.5)
         except Exception as err:
             logger.error("Unable to set serial port for transmit with error: %s", err)
         return
