@@ -37,6 +37,7 @@ async def main():
         while True:
             if not rep.is_busy():
                 if _busy:
+                    # log the change of state then set _busy to False
                     logger.info("Receiver is free.")
                     _busy = False
 
@@ -46,6 +47,7 @@ async def main():
                     await rep.serial_disable_tx(rep)
             else:
                 if not _busy:
+                    # log the change of state then set _busy to True
                     logger.info("Receiver is busy.")
                     _busy = True
 
