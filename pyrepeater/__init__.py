@@ -3,7 +3,6 @@ import logging
 import os
 
 from repeater import Repeater
-from transmit import Transmitter
 from settings import RepeaterSettings
 
 
