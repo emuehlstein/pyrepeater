@@ -60,7 +60,7 @@ async def main():
                     logger.info("Receiver is busy.")
                     current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
                     recorder = subprocess.Popen(
-                        ["rec", "-q", "-c", "1", "-r", "8000", "recordings/{current_time}.wav}"]
+                        ["rec", "-q", "-c", "1", "-r", "8000", "recordings/{current_time}.wav"]
                     )
                     _busy = True
 
