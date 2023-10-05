@@ -3,6 +3,7 @@ import logging
 import os
 
 from datetime import datetime
+import re
 
 from repeater import Repeater
 from settings import RepeaterSettings
@@ -33,6 +34,9 @@ async def main():
 
     # it's busy until we know otherwise
     _busy = True
+
+    # we don't have a recorder until the first rcv event
+    recorder = None
 
     try:
         # loop checking if the repeater is busy, send pending messages if not
