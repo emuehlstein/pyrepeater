@@ -48,6 +48,7 @@ async def main():
                     logger.info("Receiver is free.")
                     if recorder:
                         recorder.terminate()
+                        logger.info("Stopped recording.")
                     _busy = False
 
                 if pending_messages:
@@ -60,6 +61,9 @@ async def main():
                     logger.info("Receiver is busy.")
                     current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
                     recording_name = f"recordings/{current_time}.wav"
+
+                    # start recording
+                    logger.info("Recording to file: %s", recording_name)
                     recorder = subprocess.Popen(
                         ["rec", "-q", "-c", "1", "-r", "8000", recording_name]
                     )
