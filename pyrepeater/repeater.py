@@ -9,9 +9,11 @@ class Repeater:
     def __init__(self, serial_port: str, settings: dict = None) -> None:
         try:
             self.serial = serial.Serial(serial_port, 9600, timeout=1)
+            
             # make sure we're not transmitting
             self.serial.setDTR(False)
             self.serial.setRTS(False)
+            
         except Exception as err:
             logger.error("Unable to open serial port with error: %s", err)
             raise err
