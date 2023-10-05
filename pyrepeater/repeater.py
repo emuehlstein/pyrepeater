@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from time import sleep
 import serial
@@ -9,7 +10,7 @@ class Repeater:
     def __init__(self, serial_port: str, settings: dict = None) -> None:
         try:
             self.serial = serial.Serial(serial_port, 9600, timeout=1)
-            
+
             # make sure we're not transmitting
             self.serial.setDTR(False)
             self.serial.setRTS(False)
