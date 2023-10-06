@@ -82,14 +82,14 @@ async def main():
 
             # hourly announcements
             if timedelta.total_seconds(datetime.now() - last_announcement) >= r_s.rpt_info_mins * 60:
-                logger.info("Last announcement was over an hour ago.  Playing announcement."")
+                logger.info("Last announcement was over an hour ago.  Playing announcement.")
                 pending_messages.append("sounds/repeater_info.wav")
                 pending_messages.append("sounds/cw_id.wav")
                 last_announcement = datetime.now()
 
             # quarter-hourly announcements
             if timedelta.total_seconds(datetime.now() - last_announcement) >= r_s.id_mins * 60:
-                logger.info("Last CW ID was over 15 minutes ago.  Playing ID."")
+                logger.info("Last CW ID was over 15 minutes ago.  Playing ID.")
                 pending_messages.append("sounds/cw_id.wav")
                 last_announcement = datetime.now()
 
