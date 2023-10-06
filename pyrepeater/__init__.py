@@ -12,7 +12,7 @@ from repeater import Repeater
 from settings import RepeaterSettings
 
 logger = logging.getLogger("pyrepeater")
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 # temp list of wav files to play
 pending_messages = ["sounds/repeater_info.wav", "sounds/cw_id.wav"]
@@ -29,6 +29,7 @@ async def play_pending_messages(pending_messages):
     logger.info("Done playing pending messages.  Clearing queue...")
     pending_messages.clear()
 
+
 async def record_to_file():
     """record incoming transmission to a file, return the recorder"""
     current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -36,13 +37,12 @@ async def record_to_file():
 
     # start recording
     logger.info("Recording to file: %s", recording_name)
-    recorder = subprocess.Popen(
-        ["rec", "-q", "-c", "1", "-r", "8000", recording_name]
-    )
+    recorder = subprocess.Popen(["rec", "-q", "-c", "1", "-r", "8000", recording_name])
     return recorder
 
+
 async def main():
-    """ main execution """
+    """main execution"""
     r_s = RepeaterSettings()
     rep = Repeater(r_s.serial_port)
 
@@ -81,20 +81,25 @@ async def main():
                     _busy = True
 
             # hourly announcements
-            if timedelta.total_seconds(datetime.now() - last_announcement) >= r_s.rpt_info_mins * 60:
-                logger.info("Last announcement was over an hour ago.  Playing announcement.")
+            if (
+                timedelta.total_seconds(datetime.now() - last_announcement)
+                >= r_s.rpt_info_mins * 60
+            ):
+                logger.info(
+                    "Last announcement was over an hour ago.  Playing announcement."
+                )
                 pending_messages.append("sounds/repeater_info.wav")
                 pending_messages.append("sounds/cw_id.wav")
                 last_announcement = datetime.now()
 
             # quarter-hourly announcements
-            if timedelta.total_seconds(datetime.now() - last_announcement) >= r_s.id_mins * 60:
+            if (
+                timedelta.total_seconds(datetime.now() - last_announcement)
+                >= r_s.id_mins * 60
+            ):
                 logger.info("Last CW ID was over 15 minutes ago.  Playing ID.")
                 pending_messages.append("sounds/cw_id.wav")
                 last_announcement = datetime.now()
-
-
-
 
     except KeyboardInterrupt:
         logger.info("Exiting")
