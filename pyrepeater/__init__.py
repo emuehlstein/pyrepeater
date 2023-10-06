@@ -24,7 +24,7 @@ async def play_pending_messages(pending_messages):
     for message in pending_messages:
         # play the wav file
         logger.info("Playing wav file: %s", message)
-        subprocess.run(["play", "-q", message])
+        subprocess.run(["play", "-q", "-t alsa", message])
 
     logger.info("Done playing pending messages.  Clearing queue...")
     pending_messages.clear()
