@@ -14,7 +14,7 @@ class Repeater:
             # make sure we're not transmitting
             self.serial.setDTR(False)
             self.serial.setRTS(False)
-            
+
         except Exception as err:
             logger.error("Unable to open serial port with error: %s", err)
             raise err
@@ -36,7 +36,7 @@ class Repeater:
             ser.setDTR(True)
             ser.setRTS(True)
             # sleep .5 for the relay to kick in
-            asyncio.sleep(.5)
+            asyncio.sleep(0.5)
         except Exception as err:
             logger.error("Unable to set serial port for transmit with error: %s", err)
         return
