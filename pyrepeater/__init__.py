@@ -28,6 +28,17 @@ async def play_pending_messages(pending_messages):
     logger.info("Done playing pending messages.  Clearing queue...")
     pending_messages.clear()
 
+async def record_to_file():
+    """record incoming transmission to a file, return the recorder"""
+    current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    recording_name = f"recordings/{current_time}.wav"
+
+    # start recording
+    logger.info("Recording to file: %s", recording_name)
+    recorder = subprocess.Popen(
+        ["rec", "-q", "-c", "1", "-r", "8000", recording_name]
+    )
+    return recorder
 
 async def main():
     """ main execution """
@@ -61,14 +72,7 @@ async def main():
                 if not _busy:
                     # log the change of state then set _busy to True
                     logger.info("Receiver is busy.")
-                    current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-                    recording_name = f"recordings/{current_time}.wav"
-
-                    # start recording
-                    logger.info("Recording to file: %s", recording_name)
-                    recorder = subprocess.Popen(
-                        ["rec", "-q", "-c", "1", "-r", "8000", recording_name]
-                    )
+                    recorder = await record_to_file()
                     _busy = True
 
     except KeyboardInterrupt:
