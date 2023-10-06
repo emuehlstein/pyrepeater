@@ -54,6 +54,7 @@ async def main():
 
                 if pending_messages:
                     await rep.serial_enable_tx(rep)
+                    asyncio.sleep(r_s.pre_tx_delay)
                     await play_pending_messages(pending_messages)
                     await rep.serial_disable_tx(rep)
             else:
