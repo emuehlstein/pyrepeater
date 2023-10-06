@@ -9,7 +9,7 @@ Asyncronously handle the following repeater behaviours:
 1) detect receive status of repeater
 2) periodically "broadcast" repeater info (ex. CW ID)
 3) log & record audio traffic
-4) modes of operation: NORMAL, NET, ?
+4) modes of operation: NORMAL, NET, DAY/NIGHT?
 5) DTMF control?
 
 ## configuration
