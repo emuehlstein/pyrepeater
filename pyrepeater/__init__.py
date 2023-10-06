@@ -1,19 +1,19 @@
+""" a simple repeater controller with periodic id """
+
 import asyncio
 import logging
 import os
-import subprocess
-
-from datetime import datetime
 import re
+import subprocess
+from datetime import datetime
 
 from repeater import Repeater
 from settings import RepeaterSettings
 
-
 logger = logging.getLogger("pyrepeater")
 logging.basicConfig(level=logging.DEBUG)
 
-
+# temp list of wav files to play
 pending_messages = ["sounds/current_weather.wav", "sounds/cw_id.wav"]
 
 
@@ -30,8 +30,9 @@ async def play_pending_messages(pending_messages):
 
 
 async def main():
-    rs = RepeaterSettings()
-    rep = Repeater(rs.serial_port)
+    """ main execution """
+    r_s = RepeaterSettings()
+    rep = Repeater(r_s.serial_port)
 
     # it's busy until we know otherwise
     _busy = True
