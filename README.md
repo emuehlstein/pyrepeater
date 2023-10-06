@@ -12,3 +12,12 @@ Asyncronously handle the following repeater behaviours:
 4) modes of operation: NORMAL, NET, ?
 5) DTMF control?
 
+## configuration
+1) replace the files in the "sounds" directory with wav files crafted for your repeater.
+2) run `export SERIAL_PORT=/dev/ttyUSB0`, replacing /dev/ttyUSB0 with the name of your serial port.
+   
+## usage
+1) Install Python 3.11 and pipenv
+2) In the pyrepeater/pyrepeater directory, run `pipenv install && pipenv shell`
+3) run `python __init__.py`
+
