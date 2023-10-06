@@ -80,12 +80,12 @@ async def main():
                     recorder = await record_to_file()
                     _busy = True
 
-            if timedelta.total_minutes(datetime.now() - last_announcement) >= 60:
+            if timedelta.total_seconds(datetime.now() - last_announcement) >= 60 * 60:
                 pending_messages.append("sounds/repeater_info.wav")
                 pending_messages.append("sounds/cw_id.wav")
                 last_announcement = datetime.now()
 
-            if timedelta.total_minutes(datetime.now() - last_announcement) >= 15:
+            if timedelta.total_seconds(datetime.now() - last_announcement) >= 15 * 60:
                 pending_messages.append("sounds/cw_id.wav")
                 last_announcement = datetime.now()
 
