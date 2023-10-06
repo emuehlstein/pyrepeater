@@ -5,7 +5,8 @@ import logging
 import os
 import re
 import subprocess
-from datetime import datetime
+from datetime import datetime, timedelta
+import time
 
 from repeater import Repeater
 from settings import RepeaterSettings
@@ -51,6 +52,9 @@ async def main():
     # we don't have a recorder until the first rcv event
     recorder = None
 
+    # we don't know when the last announcement was
+    last_announcement = datetime.now()
+
     try:
         # loop checking if the repeater is busy, send pending messages if not
         while True:
@@ -68,12 +72,25 @@ async def main():
                     await asyncio.sleep(r_s.pre_tx_delay)
                     await play_pending_messages(pending_messages)
                     await rep.serial_disable_tx(rep)
+                    last_announcement = datetime.now()
             else:
                 if not _busy:
                     # log the change of state then set _busy to True
                     logger.info("Receiver is busy.")
                     recorder = await record_to_file()
                     _busy = True
+
+            if timedelta.total_minutes(datetime.now() - last_announcement) >= 60:
+                pending_messages.append("sounds/repeater_info.wav")
+                pending_messages.append("sounds/cw_id.wav")
+                last_announcement = datetime.now()
+
+            if timedelta.total_minutes(datetime.now() - last_announcement) >= 15:
+                pending_messages.append("sounds/cw_id.wav")
+                last_announcement = datetime.now()
+
+
+
 
     except KeyboardInterrupt:
         logger.info("Exiting")
