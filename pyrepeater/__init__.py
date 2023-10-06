@@ -14,7 +14,7 @@ logger = logging.getLogger("pyrepeater")
 logging.basicConfig(level=logging.DEBUG)
 
 # temp list of wav files to play
-pending_messages = ["sounds/current_weather.wav", "sounds/cw_id.wav"]
+pending_messages = ["sounds/repeater_info.wav", "sounds/cw_id.wav"]
 
 
 async def play_pending_messages(pending_messages):
