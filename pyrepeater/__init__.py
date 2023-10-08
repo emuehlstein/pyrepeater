@@ -55,8 +55,9 @@ async def main():
     # we don't have a recorder until the first rcv event
     recorder = None
 
-    # we don't know when the last announcement was
+    # set some time baselines
     last_announcement = datetime.now()
+    last_used = datetime.now()
 
     try:
         # loop checking if the repeater is busy, send pending messages if not
@@ -70,6 +71,9 @@ async def main():
                     if recorder:
                         recorder.terminate()
                         logger.info("Stopped recording.")
+
+                    # mark the last used time
+                    last_used = datetime.now()
 
                     # mark the repeater as not busy
                     _busy = False
