@@ -1,3 +1,5 @@
+[MESSAGES CONTROL]
+
 disable=raw-checker-failed,
         bad-inline-option,
         locally-disabled,
