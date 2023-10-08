@@ -1,0 +1,11 @@
+disable=raw-checker-failed,
+        bad-inline-option,
+        locally-disabled,
+        file-ignored,
+        suppressed-message,
+        useless-suppression,
+        deprecated-pragma,
+        use-symbolic-message-instead,
+        import-error,
+        broad-exception-caught,
+        too-few-public-methods

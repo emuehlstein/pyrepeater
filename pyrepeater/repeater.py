@@ -1,6 +1,5 @@
 """ a module to represent a repeater """
 
-import asyncio
 import logging
 
 import serial
@@ -9,7 +8,8 @@ logger = logging.getLogger(__name__)
 
 
 class Repeater:
-    """ a class to represent a repeater """
+    """a class to represent a repeater"""
+
     def __init__(self, serial_port: str, settings: dict = None) -> None:
         try:
             self.serial = serial.Serial(serial_port, 9600, timeout=1)

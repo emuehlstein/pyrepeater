@@ -3,6 +3,8 @@
 a repeater controller for Retevis & Midland GRMS repeaters with the interface
 board from www.gmrstwowayradio.com
 
+presently intended for use on linux, raspberry pi
+
 ## objectives
 Asyncronously handle the following repeater behaviours: 
 

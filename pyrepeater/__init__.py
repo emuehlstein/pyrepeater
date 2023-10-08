@@ -66,9 +66,13 @@ async def main():
                 if _busy:
                     # log the change of state then set _busy to False
                     logger.info("Receiver is free.")
+
+                    # stop recording
                     if recorder:
                         recorder.terminate()
                         logger.info("Stopped recording.")
+
+                    # mark the repeater as not busy
                     _busy = False
 
                 if pending_messages:
