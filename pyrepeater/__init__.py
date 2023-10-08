@@ -91,24 +91,27 @@ async def main():
                     # mark the repeater as busy
                     _busy = True
 
-            # hourly announcements
+            # repeater info + ID announcements
             if (
                 timedelta.total_seconds(datetime.now() - last_announcement)
                 >= r_s.rpt_info_mins * 60
             ):
                 logger.info(
-                    "Last announcement was over an hour ago.  Playing announcement."
+                    "Last announcement was over %s mins ago.  Playing announcement.",
+                    r_s.rpt_info_mins,
                 )
                 pending_messages.append("sounds/repeater_info.wav")
                 pending_messages.append("sounds/cw_id.wav")
                 last_announcement = datetime.now()
 
-            # quarter-hourly announcements
+            # cw only announcements
             if (
                 timedelta.total_seconds(datetime.now() - last_announcement)
                 >= r_s.id_mins * 60
             ):
-                logger.info("Last CW ID was over 15 minutes ago.  Playing ID.")
+                logger.info(
+                    "Last CW ID was over %s minutes ago.  Playing ID.", r_s.id_mins
+                )
                 pending_messages.append("sounds/cw_id.wav")
                 last_announcement = datetime.now()
 
