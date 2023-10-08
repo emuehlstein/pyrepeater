@@ -2,11 +2,9 @@
 
 import asyncio
 import logging
-import os
-import re
 import subprocess
 from datetime import datetime, timedelta
-import time
+from typing import List
 
 from repeater import Repeater
 from settings import RepeaterSettings
@@ -18,10 +16,10 @@ logging.basicConfig(level=logging.INFO)
 pending_messages = ["sounds/repeater_info.wav", "sounds/cw_id.wav"]
 
 
-async def play_pending_messages(messages):
+async def play_pending_messages(wav_files: List[str]) -> None:
     """play the list of wav files in pending_messages"""
 
-    for message in messages:
+    for message in wav_files:
         # play the wav file
         logger.info("Playing wav file: %s", message)
         subprocess.run(
@@ -35,7 +33,7 @@ async def play_pending_messages(messages):
     pending_messages.clear()
 
 
-async def record_to_file():
+async def record_to_file() -> subprocess.Popen:
     """record incoming transmission to a file, return the recorder"""
     current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     recording_name = f"recordings/{current_time}.wav"
@@ -86,7 +84,11 @@ async def main():
                 if not _busy:
                     # log the change of state then set _busy to True
                     logger.info("Receiver is busy.")
+
+                    # start recording
                     recorder = await record_to_file()
+
+                    # mark the repeater as busy
                     _busy = True
 
             # hourly announcements
