@@ -18,10 +18,10 @@ logging.basicConfig(level=logging.INFO)
 pending_messages = ["sounds/repeater_info.wav", "sounds/cw_id.wav"]
 
 
-async def play_pending_messages(pending_messages):
+async def play_pending_messages(messages):
     """play the list of wav files in pending_messages"""
 
-    for message in pending_messages:
+    for message in messages:
         # play the wav file
         logger.info("Playing wav file: %s", message)
         subprocess.run(
