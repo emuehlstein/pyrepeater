@@ -28,6 +28,7 @@ async def play_pending_messages(pending_messages):
             ["play", "-q", message],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
+            check=False,
         )
 
     logger.info("Done playing pending messages.  Clearing queue...")
