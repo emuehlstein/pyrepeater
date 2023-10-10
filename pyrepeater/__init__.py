@@ -2,126 +2,43 @@
 
 import asyncio
 import logging
-import subprocess
-from datetime import datetime, timedelta
-from typing import List
 
+from controller import Controller
 from repeater import Repeater
-from settings import RepeaterSettings
+from settings import ControllerSettings, RepeaterSettings
 
 logger = logging.getLogger("pyrepeater")
 logging.basicConfig(level=logging.INFO)
 
-# temp list of wav files to play
-pending_messages = ["sounds/repeater_info.wav", "sounds/cw_id.wav"]
-
-
-async def play_pending_messages(wav_files: List[str]) -> None:
-    """play the list of wav files in pending_messages"""
-
-    for message in wav_files:
-        # play the wav file
-        logger.info("Playing wav file: %s", message)
-        subprocess.run(
-            ["play", "-q", message],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            check=False,
-        )
-
-    logger.info("Done playing pending messages.  Clearing queue...")
-    pending_messages.clear()
-
-
-async def record_to_file() -> subprocess.Popen:
-    """record incoming transmission to a file, return the recorder"""
-    current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    recording_name = f"recordings/{current_time}.wav"
-
-    # start recording
-    logger.info("Recording to file: %s", recording_name)
-    recorder = subprocess.Popen(["rec", "-q", "-c", "1", "-r", "8000", recording_name])
-    return recorder
-
 
 async def main():
     """main execution"""
-    r_s = RepeaterSettings()
-    rep = Repeater(r_s.serial_port)
 
-    # it's busy until we know otherwise
-    _busy = True
-
-    # we don't have a recorder until the first rcv event
-    recorder = None
-
-    # set some time baselines
-    last_announcement = datetime.now()
-    last_used = datetime.now()
-
+    # repeater setup
     try:
-        # loop checking if the repeater is busy, send pending messages if not
-        while True:
-            if not rep.is_busy():
-                if _busy:
-                    # log the change of state then set _busy to False
-                    logger.info("Receiver is free.")
+        r_s = RepeaterSettings()
+        rep = Repeater(r_s.serial_port)
+    except Exception as err:
+        logger.error("Unable to connect to repeater with error: %s", err)
+        raise err
 
-                    # stop recording
-                    if recorder:
-                        recorder.terminate()
-                        logger.info("Stopped recording.")
+    # controller setup
+    try:
+        c_s = ControllerSettings()
+        ctlr = Controller(rep, c_s)
+    except Exception as err:
+        logger.error("Unable to create controller with error: %s", err)
+        raise err
 
-                    # mark the last used time
-                    last_used = datetime.now()
-
-                    # mark the repeater as not busy
-                    _busy = False
-
-                if pending_messages:
-                    await rep.serial_enable_tx(rep)
-                    await asyncio.sleep(r_s.pre_tx_delay)
-                    await play_pending_messages(pending_messages)
-                    await rep.serial_disable_tx(rep)
-                    last_announcement = datetime.now()
-            else:
-                if not _busy:
-                    # log the change of state then set _busy to True
-                    logger.info("Receiver is busy.")
-
-                    # start recording
-                    recorder = await record_to_file()
-
-                    # mark the repeater as busy
-                    _busy = True
-
-            # repeater info + ID announcements
-            if (
-                timedelta.total_seconds(datetime.now() - last_announcement)
-                >= r_s.rpt_info_mins * 60
-            ):
-                logger.info(
-                    "Last announcement was over %s mins ago.  Playing announcement.",
-                    r_s.rpt_info_mins,
-                )
-                pending_messages.append("sounds/repeater_info.wav")
-                pending_messages.append("sounds/cw_id.wav")
-                last_announcement = datetime.now()
-
-            # cw only announcements
-            if (
-                timedelta.total_seconds(datetime.now() - last_announcement)
-                >= r_s.id_mins * 60
-            ):
-                logger.info(
-                    "Last CW ID was over %s minutes ago.  Playing ID.", r_s.id_mins
-                )
-                pending_messages.append("sounds/cw_id.wav")
-                last_announcement = datetime.now()
-
+    # start the controller
+    try:
+        await ctlr.start_controller()
     except KeyboardInterrupt:
         logger.info("Exiting")
         rep.close()
+    except Exception as err:
+        logger.error("Controller error: %s", err)
+        raise err
 
 
 if __name__ == "__main__":
