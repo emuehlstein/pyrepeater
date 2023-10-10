@@ -17,7 +17,7 @@ async def main():
     # repeater setup
     try:
         r_s = RepeaterSettings()
-        rep = Repeater(r_s.serial_port)
+        rep = Repeater(r_s.serial_port, r_s)
     except Exception as err:
         logger.error("Unable to connect to repeater with error: %s", err)
         raise err

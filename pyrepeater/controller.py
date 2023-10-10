@@ -102,7 +102,6 @@ class Controller:
 
         if self.status.pending_messages:
             await self.repeater.serial_enable_tx(self.repeater)
-            await asyncio.sleep(self.settings.pre_tx_delay)
             await self.play_pending_messages(self.status.pending_messages)
             await self.repeater.serial_disable_tx(self.repeater)
             self.status.last_announcement = datetime.now()
