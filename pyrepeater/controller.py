@@ -48,7 +48,7 @@ class Controller:
                     # mark the repeater as not busy
                     self.status.busy = False
 
-                    await self.when_repeater_is_free()
+                await self.when_repeater_is_free()
 
             # check if repeater is busy
             elif self.repeater.is_busy():
