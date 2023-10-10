@@ -61,6 +61,9 @@ class Controller:
 
                     await self.when_repeater_is_busy()
 
+            # check for timed events
+            await self.check_for_timed_events()
+
     async def play_pending_messages(self, wav_files: List[str]) -> None:
         """play the list of wav files in pending_messages"""
 
