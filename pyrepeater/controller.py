@@ -1,5 +1,4 @@
 """ repeater controller and logic"""
-import asyncio
 import logging
 import subprocess
 from datetime import datetime, timedelta
