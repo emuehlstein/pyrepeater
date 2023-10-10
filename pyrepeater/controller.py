@@ -130,7 +130,7 @@ class Controller:
 
         # cw only announcements
         if (
-            timedelta.total_seconds(datetime.now() - last_announcement)
+            timedelta.total_seconds(datetime.now() - self.status.last_announcement)
             >= self.settings.id_mins * 60
         ):
             logger.info(
