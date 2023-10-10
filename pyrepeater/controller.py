@@ -1,7 +1,7 @@
 """ repeater controller and logic"""
 import logging
 import subprocess
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from typing import List
 from dataclasses import dataclass
 
@@ -30,9 +30,9 @@ class Controller:
         self.recorder = None
         self.status = ControllerStatus(
             busy=False,
-            last_id=None,
-            last_announcement=None,
-            last_used_dt=None,
+            last_id=datetime.now(),
+            last_announcement=datetime.now(),
+            last_used_dt=datetime.now(),
             pending_messages=["sounds/repeater_info.wav", "sounds/cw_id.wav"],
         )
 
