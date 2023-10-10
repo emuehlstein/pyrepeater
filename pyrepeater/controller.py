@@ -1,9 +1,9 @@
 """ repeater controller and logic"""
 import logging
 import subprocess
-from datetime import date, datetime, timedelta
-from typing import List
 from dataclasses import dataclass
+from datetime import datetime, timedelta
+from typing import List
 
 from repeater import Repeater
 
@@ -138,4 +138,4 @@ class Controller:
                 self.settings.id_mins,
             )
             self.status.pending_messages.append("sounds/cw_id.wav")
-            last_announcement = datetime.now()
+            self.status.last_announcement = datetime.now()
