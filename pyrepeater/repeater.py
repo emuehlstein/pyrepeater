@@ -1,5 +1,6 @@
 """ a module to represent a repeater """
 
+import asyncio
 import logging
 
 import serial
@@ -12,6 +13,7 @@ class Repeater:
 
     def __init__(self, serial_port: str, settings) -> None:
         self.settings = settings
+
         try:
             self.serial = serial.Serial(serial_port, 9600, timeout=1)
 
