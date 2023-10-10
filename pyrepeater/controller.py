@@ -4,10 +4,22 @@ import logging
 import subprocess
 from datetime import datetime, timedelta
 from typing import List
+from dataclasses import dataclass
 
 from repeater import Repeater
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class ControllerStatus:
+    """a class to represent the status of the controller"""
+
+    busy: bool
+    last_id: datetime
+    last_announcement: datetime
+    last_used_dt: datetime
+    pending_messages: List[str]
 
 
 class Controller:
@@ -16,12 +28,14 @@ class Controller:
     def __init__(self, repeater, settings) -> None:
         self.repeater: Repeater = repeater
         self.settings = settings
-        self._busy: bool = False
-        self._last_id: datetime = None
-        self._last_announcement: datetime = None
-        self._last_used_dt: datetime = None
         self.recorder = None
-        self.pending_messages = ["sounds/repeater_info.wav", "sounds/cw_id.wav"]
+        self.status = ControllerStatus(
+            busy=False,
+            last_id=None,
+            last_announcement=None,
+            last_used_dt=None,
+            pending_messages=["sounds/repeater_info.wav", "sounds/cw_id.wav"],
+        )
 
     async def start_controller(self):
         """start the controller"""
@@ -29,22 +43,22 @@ class Controller:
             # check if repeater is free
             if not self.repeater.is_busy():
                 # check if our busy flag is set
-                if self._busy:
+                if self.status.busy:
                     # log the change of state then run actions
                     logger.info("Receiver is free.")
                     # mark the repeater as not busy
-                    self._busy = False
+                    self.status.busy = False
 
                     await self.when_repeater_is_free()
 
             # check if repeater is busy
             elif self.repeater.is_busy():
                 # check if our busy flag is set
-                if not self._busy:
+                if not self.status.busy:
                     # log the change of state then run actions
                     logger.info("Receiver is busy.")
                     # mark the repeater as busy
-                    self._busy = True
+                    self.status.busy = True
 
                     await self.when_repeater_is_busy()
 
@@ -62,7 +76,7 @@ class Controller:
             )
 
         logger.info("Done playing pending messages.  Clearing queue...")
-        self.pending_messages.clear()
+        self.status.pending_messages.clear()
 
     async def record_to_file(self) -> subprocess.Popen:
         """record incoming transmission to a file, return the recorder"""
@@ -84,14 +98,14 @@ class Controller:
             logger.info("Stopped recording.")
 
         # mark the last used time
-        self._last_used_dt = datetime.now()
+        self.status.last_used_dt = datetime.now()
 
-        if self.pending_messages:
+        if self.status.pending_messages:
             await self.repeater.serial_enable_tx(self.repeater)
             await asyncio.sleep(self.settings.pre_tx_delay)
-            await self.play_pending_messages(self.pending_messages)
+            await self.play_pending_messages(self.status.pending_messages)
             await self.repeater.serial_disable_tx(self.repeater)
-            self._last_announcement = datetime.now()
+            self.status.last_announcement = datetime.now()
 
     async def when_repeater_is_busy(self) -> None:
         """actions to take when the repeater is busy"""
@@ -102,16 +116,16 @@ class Controller:
         """check for timed events ex. CW ID"""
         # repeater info + ID announcements
         if (
-            timedelta.total_seconds(datetime.now() - self._last_announcement)
+            timedelta.total_seconds(datetime.now() - self.status.last_announcement)
             >= self.settings.rpt_info_mins * 60
         ):
             logger.info(
                 "Last announcement was over %s mins ago.  Playing announcement.",
                 self.settings.rpt_info_mins,
             )
-            self.pending_messages.append("sounds/repeater_info.wav")
-            self.pending_messages.append("sounds/cw_id.wav")
-            self._last_announcement = datetime.now()
+            self.status.pending_messages.append("sounds/repeater_info.wav")
+            self.status.pending_messages.append("sounds/cw_id.wav")
+            self.status.last_announcement = datetime.now()
 
         # cw only announcements
         if (
@@ -122,5 +136,5 @@ class Controller:
                 "Last CW ID was over %s minutes ago.  Playing ID.",
                 self.settings.id_mins,
             )
-            self.pending_messages.append("sounds/cw_id.wav")
+            self.status.pending_messages.append("sounds/cw_id.wav")
             last_announcement = datetime.now()
