@@ -123,9 +123,8 @@ class Controller:
         # start recording
         self.recorder = await self.record_to_file()
 
-    async def check_for_timed_events(self) -> None:
-        """check for timed events ex. CW ID"""
-        # idle timer
+    async def idle_timer(self) -> None:
+        """idle timer"""
         if (
             timedelta.total_seconds(datetime.now() - self.status.last_used_dt)
             >= self.settings.idle_after_mins * 60
@@ -136,7 +135,8 @@ class Controller:
             )
             self.status.idle = True
 
-        # repeater info + ID announcements
+    async def repeaterinfo_timer(self) -> None:
+        """repeater info timer"""
         if (
             timedelta.total_seconds(datetime.now() - self.status.last_announcement)
             >= self.settings.rpt_info_mins * 60
@@ -149,14 +149,25 @@ class Controller:
             self.status.pending_messages.append("sounds/cw_id.wav")
             self.status.last_announcement = datetime.now()
 
-        # cw only announcements
+    async def cwid_timer(self) -> None:
+        """when to play CW ID"""
+
         if (
             timedelta.total_seconds(datetime.now() - self.status.last_id)
             >= self.settings.id_mins * 60
-        ) and not self.status.idle:
+        ):
+            return
+
+        if not self.status.idle or self.settings.id_when_idle:
             logger.info(
                 "Last CW ID was over %s minutes ago.  Playing ID.",
                 self.settings.id_mins,
             )
             self.status.pending_messages.append("sounds/cw_id.wav")
             self.status.last_id = datetime.now()
+
+    async def check_for_timed_events(self) -> None:
+        """check for timed events ex. CW ID"""
+        await self.idle_timer()
+        await self.repeaterinfo_timer()
+        await self.cwid_timer()
