@@ -14,7 +14,8 @@ logger = logging.getLogger(__name__)
 class ControllerStatus:
     """a class to represent the status of the controller"""
 
-    busy: bool
+    busy: bool  # is the repeater receiving a transmission
+    idle: bool  # has the repeater been idle for idle_after_mins
     last_id: datetime
     last_announcement: datetime
     last_used_dt: datetime
@@ -30,6 +31,7 @@ class Controller:
         self.recorder = None
         self.status = ControllerStatus(
             busy=False,
+            idle=False,
             last_id=datetime.now(),
             last_announcement=datetime.now(),
             last_used_dt=datetime.now(),
@@ -62,7 +64,14 @@ class Controller:
                     # mark the repeater as busy
                     self.status.busy = True
 
-                    await self.when_repeater_is_busy()
+                # check if our busy flag is set
+                if not self.status.idle:
+                    # log the change of state then run actions
+                    logger.info("Ending idle state.")
+                    # mark the repeater as busy
+                    self.status.idle = False
+
+                await self.when_repeater_is_busy()
 
     async def play_pending_messages(self, wav_files: List[str]) -> None:
         """play the list of wav files in pending_messages"""
@@ -116,6 +125,17 @@ class Controller:
 
     async def check_for_timed_events(self) -> None:
         """check for timed events ex. CW ID"""
+        # idle timer
+        if (
+            timedelta.total_seconds(datetime.now() - self.status.last_used_dt)
+            >= self.settings.idle_after_mins * 60
+        ):
+            logger.info(
+                "Last used was over %s mins ago.  Playing setting to idle state.",
+                self.settings.idle_after_mins,
+            )
+            self.status.idle = True
+
         # repeater info + ID announcements
         if (
             timedelta.total_seconds(datetime.now() - self.status.last_announcement)
@@ -133,10 +153,10 @@ class Controller:
         if (
             timedelta.total_seconds(datetime.now() - self.status.last_id)
             >= self.settings.id_mins * 60
-        ):
+        ) and not self.status.idle:
             logger.info(
                 "Last CW ID was over %s minutes ago.  Playing ID.",
                 self.settings.id_mins,
             )
             self.status.pending_messages.append("sounds/cw_id.wav")
-            self.status.last_announcement = datetime.now()
+            self.status.last_id = datetime.now()
