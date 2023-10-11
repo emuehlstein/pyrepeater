@@ -1,5 +1,6 @@
 """ a module to represent a repeater """
 
+import asyncio
 import logging
 
 import serial
@@ -10,7 +11,9 @@ logger = logging.getLogger(__name__)
 class Repeater:
     """a class to represent a repeater"""
 
-    def __init__(self, serial_port: str, settings: dict = None) -> None:
+    def __init__(self, serial_port: str, settings) -> None:
+        self.settings = settings
+
         try:
             self.serial = serial.Serial(serial_port, 9600, timeout=1)
 
@@ -38,6 +41,7 @@ class Repeater:
             ser = repeater.serial
             ser.setDTR(True)
             ser.setRTS(True)
+            await asyncio.sleep(self.settings.pre_tx_delay)
         except Exception as err:
             logger.error("Unable to set serial port for transmit with error: %s", err)
         return
