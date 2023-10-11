@@ -109,9 +109,6 @@ class Controller:
             self.recorder = None
             logger.info("Stopped recording.")
 
-        # mark the last used time
-        self.status.last_used_dt = datetime.now()
-
         if self.status.pending_messages:
             await self.repeater.serial_enable_tx(self.repeater)
             await self.play_pending_messages(self.status.pending_messages)
@@ -123,6 +120,9 @@ class Controller:
         # start recording
         if not self.recorder:
             self.recorder = await self.record_to_file()
+
+        # mark the last used time
+        self.status.last_used_dt = datetime.now()
 
     async def idle_timer(self) -> None:
         """idle timer"""
