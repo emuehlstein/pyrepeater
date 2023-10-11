@@ -141,6 +141,8 @@ class Controller:
             timedelta.total_seconds(datetime.now() - self.status.last_announcement)
             <= self.settings.rpt_info_mins * 60
         ):
+            return
+        else:
             logger.info(
                 "Last announcement was over %s mins ago.  Playing announcement.",
                 self.settings.rpt_info_mins,
