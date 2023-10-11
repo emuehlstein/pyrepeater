@@ -35,7 +35,6 @@ async def main():
         await ctlr.start_controller()
     except KeyboardInterrupt:
         logger.info("Exiting")
-        rep.close()
     except Exception as err:
         logger.error("Controller error: %s", err)
         raise err
