@@ -8,6 +8,7 @@ class RepeaterSettings(BaseSettings):
 
     serial_port: str = "/dev/ttyUSB0"
     pre_tx_delay: float = 1.0  # seconds between serial tx enable and playing wav file
+    post_tx_delay: float = 1.0  # seconds after tx disable before returning
 
 
 class ControllerSettings(BaseSettings):
