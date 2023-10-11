@@ -126,7 +126,7 @@ class Controller:
 
     async def idle_timer(self) -> None:
         """idle timer"""
-        if (
+        if not self.status.idle and (
             timedelta.total_seconds(datetime.now() - self.status.last_used_dt)
             >= self.settings.idle_after_mins * 60
         ):
