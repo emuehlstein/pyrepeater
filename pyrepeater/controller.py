@@ -64,11 +64,11 @@ class Controller:
                     # mark the repeater as busy
                     self.status.busy = True
 
-                # check if our busy flag is set
-                if not self.status.idle:
+                # check if our idle flag is set
+                if self.status.idle:
                     # log the change of state then run actions
                     logger.info("Ending idle state.")
-                    # mark the repeater as busy
+                    # mark the repeater as active
                     self.status.idle = False
 
                 await self.when_repeater_is_busy()
