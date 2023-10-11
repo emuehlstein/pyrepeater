@@ -1,0 +1,13 @@
+[Unit]
+Description=pyrepeater
+After=network.target
+
+[Service]
+User=pyrepeater
+Group=pyrepeater
+WorkingDirectory=/opt/pyrepeater/pyrepeater/
+ExecStart=/opt/pyrepeater/pyrepeater/launch.sh
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

@@ -3,3 +3,76 @@
     name: python3
     state: present
   become: yes
+
+- name: Create pyrepeater user
+  user:
+    name: pyrepeater
+    state: present
+    shell: /bin/bash
+    createhome: yes
+    home: /home/pyrepeater
+  become: yes
+
+- name: Add user to dialout (for serial access)
+  user:
+    name: pyrepeater
+    groups: dialout, audio
+    append: yes
+  become: yes
+
+- name: Create project directory
+  file:
+    path: /opt/pyrepeater
+    state: directory
+    owner: "pyrepeater"
+    group: "pyrepeater"
+    mode: "0770"
+
+- name: Clone project from GitHub
+  git:
+    repo: https://github.com/emuehlstein/pyrepeater.git
+    dest: /opt/pyrepeater/
+    version: main
+    force: yes
+  become_user: pyrepeater
+
+- name: Install Python dependencies
+  pip:
+    requirements: "/opt/pyrepeater/pyrepeater/requirements.txt"
+    virtualenv: /opt/pyrepeater/pyrepeater/venv
+    virtualenv_command: python3.9 -m venve
+  become_user: pyrepeater
+
+- name: Copy .env file
+  copy:
+    src: "../files/.env"
+    dest: "/opt/pyrepeater/pyrepeater/.env"
+    mode: "0600"
+    owner: "pyrepeater"
+    group: "pyrepeater"
+
+- name: Copy launch script
+  copy:
+    src: "../files/launch.sh"
+    dest: "/opt/pyrepeater/pyrepeater/launch.sh"
+    mode: "0755"
+    owner: "pyrepeater"
+    group: "pyrepeater"
+
+- name: Copy systemd service file
+  copy:
+    src: "../files/etc/systemd/system/pyrepeater.service"
+    dest: "/etc/systemd/system/pyrepeater.service"
+    mode: "0644"
+    owner: "root"
+    group: "root"
+
+- name: Reload systemd
+  systemd:
+    daemon_reload: yes
+
+- name: Enable pyrepeater service & start
+  systemd:
+    name: pyrepeater
+    enabled: yes
+    state: started
