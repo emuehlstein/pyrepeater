@@ -97,6 +97,7 @@ class Controller:
         # stop recording
         if self.recorder:
             self.recorder.terminate()
+            self.recorder = None
             logger.info("Stopped recording.")
 
         # mark the last used time
