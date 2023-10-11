@@ -121,7 +121,8 @@ class Controller:
     async def when_repeater_is_busy(self) -> None:
         """actions to take when the repeater is busy"""
         # start recording
-        self.recorder = await self.record_to_file()
+        if not self.recorder:
+            self.recorder = await self.record_to_file()
 
     async def idle_timer(self) -> None:
         """idle timer"""
