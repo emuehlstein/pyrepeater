@@ -139,7 +139,7 @@ class Controller:
         """repeater info timer"""
         if (
             timedelta.total_seconds(datetime.now() - self.status.last_announcement)
-            >= self.settings.rpt_info_mins * 60
+            <= self.settings.rpt_info_mins * 60
         ):
             logger.info(
                 "Last announcement was over %s mins ago.  Playing announcement.",
@@ -154,7 +154,7 @@ class Controller:
 
         if (
             timedelta.total_seconds(datetime.now() - self.status.last_id)
-            >= self.settings.id_mins * 60
+            <= self.settings.id_mins * 60
         ):
             return
 
