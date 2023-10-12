@@ -10,6 +10,9 @@ class RepeaterSettings(BaseSettings):
     pre_tx_delay: float = 1.0  # seconds between serial tx enable and playing wav file
     post_tx_delay: float = 1.0  # seconds after tx disable before returning
 
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+
 
 class ControllerSettings(BaseSettings):
     """settings for controller"""
@@ -19,3 +22,6 @@ class ControllerSettings(BaseSettings):
     rpt_info_mins: int = 60  # minutes between repeater info messages
     id_when_idle: bool = False  # send ID messages when idle
     idle_after_mins: int = 10  # minutes of inactivity before idle
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
