@@ -1,6 +1,6 @@
 """ settings for pyrepeater"""
 
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class RepeaterSettings(BaseSettings):
