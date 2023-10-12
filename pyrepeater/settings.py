@@ -17,7 +17,7 @@ class RepeaterSettings(BaseSettings):
 
 
 class ControllerSettings(BaseSettings):
-    """settings for settings"""
+    """settings for controller"""
 
     fcc_id: str = "WRXC682"
     id_mins: int = 15  # minutes between ID messages
@@ -26,4 +26,6 @@ class ControllerSettings(BaseSettings):
     idle_after_mins: int = 10  # minutes of inactivity before idle
 
     class Settings(BaseSettings):
+        """settings for settings"""
+
         model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
