@@ -131,7 +131,7 @@ class Controller:
             >= self.settings.idle_after_mins * 60
         ):
             logger.info(
-                "Last used was over %s mins ago.  Setting to idle state.",
+                "Entering idle state.  Last used over %s mins ago.",
                 self.settings.idle_after_mins,
             )
             self.status.idle = True
