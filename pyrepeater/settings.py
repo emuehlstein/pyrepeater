@@ -11,11 +11,13 @@ class RepeaterSettings(BaseSettings):
     post_tx_delay: float = 1.0  # seconds after tx disable before returning
 
     class Settings(BaseSettings):
+        """settings for settings"""
+
         model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
 
 class ControllerSettings(BaseSettings):
-    """settings for controller"""
+    """settings for settings"""
 
     fcc_id: str = "WRXC682"
     id_mins: int = 15  # minutes between ID messages

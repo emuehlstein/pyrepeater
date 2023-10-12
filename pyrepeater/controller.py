@@ -143,14 +143,14 @@ class Controller:
             <= self.settings.rpt_info_mins * 60
         ):
             return
-        else:
-            logger.info(
-                "Last announcement was over %s mins ago.  Playing announcement.",
-                self.settings.rpt_info_mins,
-            )
-            self.status.pending_messages.append("sounds/repeater_info.wav")
-            self.status.pending_messages.append("sounds/cw_id.wav")
-            self.status.last_announcement = datetime.now()
+
+        logger.info(
+            "Last announcement was over %s mins ago.  Playing announcement.",
+            self.settings.rpt_info_mins,
+        )
+        self.status.pending_messages.append("sounds/repeater_info.wav")
+        self.status.pending_messages.append("sounds/cw_id.wav")
+        self.status.last_announcement = datetime.now()
 
     async def cwid_timer(self) -> None:
         """when to play CW ID"""
