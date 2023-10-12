@@ -113,7 +113,6 @@ class Controller:
             await self.repeater.serial_enable_tx(self.repeater)
             await self.play_pending_messages(self.status.pending_messages)
             await self.repeater.serial_disable_tx(self.repeater)
-            self.status.last_announcement = datetime.now()
 
     async def when_repeater_is_busy(self) -> None:
         """actions to take when the repeater is busy"""
