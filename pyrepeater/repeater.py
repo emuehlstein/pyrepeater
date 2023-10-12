@@ -54,6 +54,7 @@ class Repeater:
             ser = repeater.serial
             ser.setDTR(False)
             ser.setRTS(False)
+            await asyncio.sleep(self.settings.post_tx_delay)
         except Exception as err:
             logger.error("Unable to set serial port end transmit with error: %s", err)
         return

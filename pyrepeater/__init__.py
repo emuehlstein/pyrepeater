@@ -7,8 +7,9 @@ from controller import Controller
 from repeater import Repeater
 from settings import ControllerSettings, RepeaterSettings
 
+LOG_FORMAT = "%(asctime)s:%(levelname)s:%(name)s:%(message)s"
+logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
 logger = logging.getLogger("pyrepeater")
-logging.basicConfig(level=logging.INFO)
 
 
 async def main():
@@ -35,7 +36,6 @@ async def main():
         await ctlr.start_controller()
     except KeyboardInterrupt:
         logger.info("Exiting")
-        rep.close()
     except Exception as err:
         logger.error("Controller error: %s", err)
         raise err
