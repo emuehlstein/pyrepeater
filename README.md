@@ -1,25 +1,29 @@
 # pyrepeater
 
-a repeater controller for Retevis & Midland GRMS repeaters with the interface
-board from www.gmrstwowayradio.com
+a repeater controller for repeaters and interfades which offer a simple serial
+and soundcard interfaces
 
-presently intended for use on linux, raspberry pi
+tested with an interface board from www.gmrstwowayradio.com and Retevis 97S
 
-## objectives
-Asyncronously handle the following repeater behaviours: 
+presently intended for use on Raspberry Pi OS
 
-1) detect receive status of repeater
-2) periodically "broadcast" repeater info (ex. CW ID)
-3) log & record audio traffic
-4) modes of operation: NORMAL, NET, DAY/NIGHT?
-5) DTMF control?
+## features
+- busy detection (receiving currently)
+- idle/active detection (used recently)
+- periodic id & repeater annoucements
+- recording of received transmissions
 
 ## configuration
 1) replace the files in the "sounds" directory with wav files crafted for your repeater.
-2) run `export SERIAL_PORT=/dev/ttyUSB0`, replacing /dev/ttyUSB0 with the name of your serial port.
+2) copy pyrepeater/.env.example to pyrepeater/.env and edit the settings to reflect your preferences.
    
 ## usage
 1) Install Python 3.11 and pipenv
 2) In the pyrepeater/pyrepeater directory, run `pipenv install && pipenv shell`
 3) run `python __init__.py`
 
+## roadmap
+- modes (day/night/net)
+- ansible
+  - systemd service
+  - blacklist headphones
