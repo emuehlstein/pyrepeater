@@ -1,7 +1,7 @@
 # pyrepeater
 
-a repeater controller for repeaters and interfades which offer a simple serial
-and soundcard interfaces
+a software controller for repeaters and interfaces which work via serial
+control and use soundcard audio
 
 tested with an interface board from www.gmrstwowayradio.com and Retevis 97S
 
@@ -26,4 +26,4 @@ presently intended for use on Raspberry Pi OS
 - modes (day/night/net)
 - ansible
   - systemd service
-  - blacklist headphones
+  - blacklist headphone jack modules
