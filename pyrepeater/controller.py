@@ -22,13 +22,22 @@ class ControllerStatus:
     pending_messages: List[str]
 
 
+@dataclass
+class Recorder:
+    """a class to represent a recorder"""
+
+    proc: subprocess.Popen
+    start_time: datetime
+    file_name: str
+
+
 class Controller:
     """a class to represent a controller"""
 
     def __init__(self, repeater, settings) -> None:
         self.repeater: Repeater = repeater
         self.settings = settings
-        self.recorder = None
+        self.recorder: Recorder = None
         self.status = ControllerStatus(
             busy=False,
             idle=False,
@@ -89,23 +98,25 @@ class Controller:
         logger.info("Done playing pending messages.  Clearing queue...")
         self.status.pending_messages.clear()
 
-    async def record_to_file(self) -> subprocess.Popen:
+    async def record_to_file(self) -> Recorder:
         """record incoming transmission to a file, return the recorder"""
-        current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        recording_name = f"recordings/{current_time}.wav"
+        current_time = datetime.now()
+        current_str = current_time.strftime("%Y-%m-%d_%H-%M-%S")
+        recording_name = f"recordings/{current_str}.wav"
 
         # start recording
         logger.info("Recording to file: %s", recording_name)
-        recorder = subprocess.Popen(
+        process = subprocess.Popen(
             ["rec", "-q", "-c", "1", "-r", "8000", recording_name]
         )
-        return recorder
+        rec = Recorder(proc=process, start_time=current_time, file_name=recording_name)
+        return rec
 
     async def when_repeater_is_free(self) -> None:
         """actions to take when the repeater is free"""
         # stop recording
         if self.recorder:
-            self.recorder.terminate()
+            self.recorder.proc.terminate()
             self.recorder = None
             logger.info("Stopped recording.")
 
@@ -148,8 +159,9 @@ class Controller:
             self.settings.rpt_info_mins,
         )
         self.status.pending_messages.append("sounds/repeater_info.wav")
-        self.status.pending_messages.append("sounds/cw_id.wav")
         self.status.last_announcement = datetime.now()
+        self.status.pending_messages.append("sounds/cw_id.wav")
+        self.status.last_id = datetime.now()
 
     async def cwid_timer(self) -> None:
         """when to play CW ID"""
