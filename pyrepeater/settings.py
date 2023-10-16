@@ -24,6 +24,7 @@ class ControllerSettings(BaseSettings):
     rpt_info_mins: int = 60  # minutes between repeater info messages
     id_when_idle: bool = False  # send ID messages when idle
     idle_after_mins: int = 10  # minutes of inactivity before idle
+    min_rec_secs: int = 5  # minimum seconds to record
 
     class Settings(BaseSettings):
         """settings for settings"""

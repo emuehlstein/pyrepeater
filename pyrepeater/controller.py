@@ -112,6 +112,25 @@ class Controller:
         rec = Recorder(proc=process, start_time=current_time, file_name=recording_name)
         return rec
 
+    async def stop_recording(self) -> None:
+        """stop recording"""
+        if self.recorder:
+            self.recorder.proc.terminate()
+            logger.info("Stopped recording.")
+
+            # check how long the recording was
+            recording_time = datetime.now() - self.recorder.start_time
+
+            # if recording was less than min_rec_secs, delete it
+            if recording_time.total_seconds() < self.settings.min_rec_secs:
+                logger.info(
+                    "Recording was less than %s seconds.  Deleting recording.",
+                    self.settings.min_rec_secs,
+                )
+                subprocess.run(["rm", "-f", self.recorder.file_name], check=False)
+
+            self.recorder = None
+
     async def when_repeater_is_free(self) -> None:
         """actions to take when the repeater is free"""
         # stop recording
