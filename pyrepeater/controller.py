@@ -51,6 +51,10 @@ class Controller:
 
     async def start_controller(self):
         """start the controller"""
+
+        # assign some private status vars
+        _waiting_for_idle = False
+
         while True:
             # check for timed events
             await self.check_for_timed_events()
@@ -76,28 +80,29 @@ class Controller:
                     self.status.busy = True
 
                 # check if our idle flag is set
-                if not self.status.idle:
-                    logger.debug(
-                        "Repeater is busy, but idle.  Waiting %ss to change to active...",
-                        self.settings.active_after_sec,
-                    )
-
+                if not self.status.idle and not _waiting_for_idle:
                     # mark start of idle
+                    logger.debug("Starting idle delay timer...")
                     self.status.idle_start = datetime.now()
+                    _waiting_for_idle = True
 
                 # check if we've been idle long enough
-                if self.status.idle and (
+                if _waiting_for_idle and (
                     timedelta.total_seconds(datetime.now() - self.status.idle_start)
                     >= self.settings.active_after_sec
                 ):
                     # log the change of state then run actions
-                    logger.info("Ending idle state.")
+                    logger.info(
+                        "Ending idle state after %ss of activity.",
+                        self.settings.active_after_sec,
+                    )
 
                     # mark the repeater as active
                     self.status.idle = False
 
-                    # reset the idle start time
+                    # reset the idle start time, reset flag
                     self.status.idle_start = None
+                    _waiting_for_idle = False
 
                 await self.when_repeater_is_busy()
 
