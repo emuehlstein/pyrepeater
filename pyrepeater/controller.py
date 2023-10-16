@@ -19,7 +19,7 @@ class ControllerStatus:
     last_id: datetime
     last_announcement: datetime
     last_used_dt: datetime
-    idle_start: datetime = None
+    idle_start: datetime
     pending_messages: List[str]
 
 
@@ -75,7 +75,7 @@ class Controller:
                     self.status.busy = True
 
                 # check if our idle flag is set
-                if self.status.idle:
+                if not self.status.idle:
                     logger.debug(
                         "Repeater is busy, but idle.  Waiting %ss to change to active...",
                         self.settings.active_after_sec,
