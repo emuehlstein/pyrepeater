@@ -96,6 +96,9 @@ class Controller:
                     # mark the repeater as active
                     self.status.idle = False
 
+                    # reset the idle start time
+                    self.status.idle_start = None
+
                 await self.when_repeater_is_busy()
 
     async def play_pending_messages(self, wav_files: List[str]) -> None:
