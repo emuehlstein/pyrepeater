@@ -19,6 +19,7 @@ class ControllerStatus:
     last_id: datetime
     last_announcement: datetime
     last_used_dt: datetime
+    idle_start: datetime = None
     pending_messages: List[str]
 
 
@@ -81,11 +82,11 @@ class Controller:
                     )
 
                     # mark start of idle
-                    idle_start = datetime.now()
+                    self.status.idle_start = datetime.now()
 
                 # check if we've been idle long enough
                 if self.status.idle and (
-                    timedelta.total_seconds(datetime.now() - idle_start)
+                    timedelta.total_seconds(datetime.now() - self.status.idle_start)
                     >= self.settings.active_after_sec
                 ):
                     # log the change of state then run actions
