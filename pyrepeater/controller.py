@@ -115,7 +115,6 @@ class Controller:
     async def stop_recording(self) -> None:
         """stop recording"""
         if not self.recorder:
-            logger.warning("No recorder to stop.")
             return
 
         # check how long the recording was
