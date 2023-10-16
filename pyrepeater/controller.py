@@ -134,10 +134,7 @@ class Controller:
     async def when_repeater_is_free(self) -> None:
         """actions to take when the repeater is free"""
         # stop recording
-        if self.recorder:
-            self.recorder.proc.terminate()
-            self.recorder = None
-            logger.info("Stopped recording.")
+        await self.stop_recording()
 
         if self.status.pending_messages:
             await self.repeater.serial_enable_tx(self.repeater)
