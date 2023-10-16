@@ -101,7 +101,7 @@ class Controller:
                     self.status.idle = False
 
                     # reset the idle start time, reset flag
-                    self.status.idle_start = None
+                    self.status.idle_wait_start = None
                     _waiting_for_idle = False
 
                 await self.when_repeater_is_busy()
