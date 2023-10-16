@@ -114,12 +114,12 @@ class Controller:
 
     async def stop_recording(self) -> None:
         """stop recording"""
+        # check how long the recording was
+        recording_time = datetime.now() - self.recorder.start_time
+
         if self.recorder:
             self.recorder.proc.terminate()
-            logger.info("Stopped recording.")
-
-            # check how long the recording was
-            recording_time = datetime.now() - self.recorder.start_time
+            logger.info("Stopped recording. (%s s)", recording_time.total_seconds())
 
             # if recording was less than min_rec_secs, delete it
             if recording_time.total_seconds() < self.settings.min_rec_secs:
