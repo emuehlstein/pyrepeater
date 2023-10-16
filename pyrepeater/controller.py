@@ -19,7 +19,7 @@ class ControllerStatus:
     last_id: datetime
     last_announcement: datetime
     last_used_dt: datetime
-    idle_start: datetime
+    idle_wait_start: datetime
     pending_messages: List[str]
 
 
@@ -45,7 +45,7 @@ class Controller:
             last_id=datetime.now(),
             last_announcement=datetime.now(),
             last_used_dt=datetime.now(),
-            idle_start=None,
+            idle_wait_start=None,
             pending_messages=["sounds/repeater_info.wav", "sounds/cw_id.wav"],
         )
 
@@ -83,12 +83,14 @@ class Controller:
                 if not self.status.idle and not _waiting_for_idle:
                     # mark start of idle
                     logger.debug("Starting idle delay timer...")
-                    self.status.idle_start = datetime.now()
+                    self.status.idle_wait_start = datetime.now()
                     _waiting_for_idle = True
 
-                # check if we've been idle long enough
+                # check if we've been idle long enough, set to idle
                 if _waiting_for_idle and (
-                    timedelta.total_seconds(datetime.now() - self.status.idle_start)
+                    timedelta.total_seconds(
+                        datetime.now() - self.status.idle_wait_start
+                    )
                     >= self.settings.active_after_sec
                 ):
                     # log the change of state then run actions
