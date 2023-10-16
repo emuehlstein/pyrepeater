@@ -45,6 +45,7 @@ class Controller:
             last_id=datetime.now(),
             last_announcement=datetime.now(),
             last_used_dt=datetime.now(),
+            idle_start=None,
             pending_messages=["sounds/repeater_info.wav", "sounds/cw_id.wav"],
         )
 
