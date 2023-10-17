@@ -158,12 +158,14 @@ class Controller:
             return
 
         # check how long the recording was
-        recording_time = datetime.now() - self.recorder.start_time
+        recording_time = timedelta.total_seconds(
+            datetime.now() - self.recorder.start_time
+        )
 
         # end recording
         self.recorder.proc.terminate()
 
-        logger.debug("Stopped recording. (%s s)", recording_time.total_seconds())
+        logger.debug("Stopped recording. (%s s)", recording_time)
 
         # if recording was less than min_rec_secs, delete it
         if recording_time.total_seconds() < self.settings.min_rec_secs:
