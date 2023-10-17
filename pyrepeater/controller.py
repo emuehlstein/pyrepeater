@@ -104,10 +104,17 @@ class Controller:
                     )
                     >= self.settings.active_after_sec
                 ):
+                    _inactivity_mins = (
+                        timedelta.total_seconds(
+                            datetime.now() - self.status.last_used_dt
+                        )
+                        / 60
+                    )
+
                     # log the change of state then run actions
                     logger.info(
-                        "Ending idle state after %ss of activity.",
-                        self.settings.active_after_sec,
+                        "Ending idle state after %s mins of inactivity.",
+                        _inactivity_mins,
                     )
 
                     # mark the repeater as active
