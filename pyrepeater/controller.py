@@ -64,7 +64,7 @@ class Controller:
                 # check if our busy flag is set
                 if self.status.busy:
                     # log the change of state then run actions
-                    logger.info("Receiver is free.")
+                    logger.debug("Receiver is free.")
                     # mark the repeater as not busy
                     self.status.busy = False
 
@@ -73,6 +73,16 @@ class Controller:
                     logger.debug("Returning to idle...")
                     _wait_before_active = False
 
+                else:
+                    _rec_length = timedelta.total_seconds(
+                        datetime.now() - self.recorder.start_time
+                    )
+                    logger.info(
+                        "Recorded %s seconds in %s",
+                        _rec_length,
+                        self.recorder.file_name,
+                    )
+
                 await self.when_repeater_is_free()
 
             # check if repeater is busy
@@ -80,7 +90,7 @@ class Controller:
                 # check if our busy flag is set
                 if not self.status.busy:
                     # log the change of state then run actions
-                    logger.info("Receiver is busy.")
+                    logger.debug("Receiver is busy.")
                     # mark the repeater as busy
                     self.status.busy = True
 
@@ -135,7 +145,7 @@ class Controller:
         recording_name = f"recordings/{current_str}.wav"
 
         # start recording
-        logger.info("Recording to file: %s", recording_name)
+        logger.debug("Recording to file: %s", recording_name)
         process = subprocess.Popen(
             ["rec", "-q", "-c", "1", "-r", "8000", recording_name]
         )
@@ -153,11 +163,11 @@ class Controller:
         # end recording
         self.recorder.proc.terminate()
 
-        logger.info("Stopped recording. (%s s)", recording_time.total_seconds())
+        logger.debug("Stopped recording. (%s s)", recording_time.total_seconds())
 
         # if recording was less than min_rec_secs, delete it
         if recording_time.total_seconds() < self.settings.min_rec_secs:
-            logger.info(
+            logger.debug(
                 "Recording was less than %s seconds.  Deleting recording.",
                 self.settings.min_rec_secs,
             )
