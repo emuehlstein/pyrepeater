@@ -74,14 +74,15 @@ class Controller:
                     _wait_before_active = False
 
                 else:
-                    _rec_length = timedelta.total_seconds(
-                        datetime.now() - self.recorder.start_time
-                    )
-                    logger.info(
-                        "Recorded %s seconds in %s",
-                        _rec_length,
-                        self.recorder.file_name,
-                    )
+                    if self.recorder:
+                        _rec_length = timedelta.total_seconds(
+                            datetime.now() - self.recorder.start_time
+                        )
+                        logger.info(
+                            "Recorded %s seconds in %s",
+                            _rec_length,
+                            self.recorder.file_name,
+                        )
 
                 await self.when_repeater_is_free()
 
