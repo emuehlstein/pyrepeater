@@ -78,11 +78,7 @@ class Controller:
                         _rec_length = timedelta.total_seconds(
                             datetime.now() - self.recorder.start_time
                         )
-                        logger.info(
-                            "Recorded %s seconds in %s",
-                            _rec_length,
-                            self.recorder.file_name,
-                        )
+                        logger.info("Recorded %.1f seconds.", _rec_length)
 
                 await self.when_repeater_is_free()
 
