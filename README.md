@@ -30,43 +30,38 @@ tested with:
 the following ENV variables should be set in the .env file prior to entering
 the pipenv virtual environment
 
-### SERIAL_PORT=/dev/ttyUSB0
-the location of your serial device
+ - SERIAL_PORT=/dev/ttyUSB0
+    - the location of your serial device
 
-### PRE_TX_DELAY=1.0
-the number of seconds (float) to wait between enabling the serial pins and
-beginning the transmission audio
+ - PRE_TX_DELAY=1.0
+    - the number of seconds (float) to wait between enabling the serial pins and beginning the transmission audio
 
-### POST_TX_DELAY=1.0
-the number of seconds (float) to wait between ending the transmission and
-disabling the serial pins
+ - POST_TX_DELAY=1.0
+    - the number of seconds (float) to wait between ending the transmission and disabling the serial pins
 
-### FCC_ID=WRXC682
-currently unused. (future: cw id generation)
+ - FCC_ID=WRXC682
+    - currently unused. (future: cw id generation)
 
-### SCHEDULE_TOH=False
-currently unused. (future: timed periods relative to top of hour or start time)
+ - SCHEDULE_TOH=False
+    - currently unused. (future: timed periods relative to top of hour or start time)
 
-### ID_MINS=15
-period of CW ID annoucements in minutes (int)
+ - ID_MINS=15
+    - period of CW ID annoucements in minutes (int)
 
-### RPT_INFO_MINS=60
-period of repeater info annoucements in minutes (int)
+ - RPT_INFO_MINS=60
+    - period of repeater info annoucements in minutes (int)
 
-### ID_WHEN_IDLE=False
-send CW IDs when repeater is idle for a prolonged period
+ - ID_WHEN_IDLE=False
+    - send CW IDs when repeater is idle for a prolonged period
 
-### IDLE_AFTER_MINS=10
-after this many minutes of inactivity, put the repeater in idle mode
+ - IDLE_AFTER_MINS=10
+    - after this many minutes of inactivity, put the repeater in idle mode
 
-### ACTIVE_AFTER_SEC=2
-if repeater is idle and becomes busy, wait this many seconds (int)
-before transitioning back to active state (prevents short key ups from
-disrupting idle)
+ - ACTIVE_AFTER_SEC=2
+    - if repeater is idle and becomes busy, wait this many seconds (int) before transitioning back to active state (prevents short key ups from disrupting idle)
 
-### MIN_REC_SEC=2
-minimum seconds for a valid recording (wav file will be deleted if it does not
-exceed this length)
+ - MIN_REC_SEC=2
+    - minimum seconds for a valid recording (wav file will be deleted if it does not exceed this length)
 
 
 ## roadmap
