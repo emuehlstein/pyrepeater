@@ -3,22 +3,22 @@
 a software controller for radio repeaters on raspberry pi
 
 tested with:
-    - Raspberry GNU/Linux 11 (bullseye)
-    - serial interface board from www.gmrstwowayradio.com
-    - FTDI USB -> Serial cable
-    - Retevis 97S
+- Raspberry GNU/Linux 11 (bullseye)
+- serial interface board from www.gmrstwowayradio.com
+- FTDI USB -> Serial cable
+- Retevis 97S
 
 ## installation
-1) Clone the repository
-2) Install Python 3.11
-3) Install pipenv
+1) clone the repository
+2) install Python 3.11
+3) install pipenv
 4) cd to pyrepeater/pyrepeater/
-5) Run `pipenv install`
+5) run `pipenv install`
 
 ## configuration
 1) replace the files in the "sounds" directory with wav files crafted for your repeater.
 2) copy pyrepeater/.env.example to pyrepeater/.env and edit the settings to
-   reflect your preferences.
+   reflect your preferences. (see settings below)
    
 ## usage
 1) cd to pyrepeater/pyrepeater
