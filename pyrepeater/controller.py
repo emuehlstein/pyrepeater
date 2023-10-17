@@ -168,7 +168,7 @@ class Controller:
         logger.debug("Stopped recording. (%s s)", recording_time)
 
         # if recording was less than min_rec_secs, delete it
-        if recording_time.total_seconds() < self.settings.min_rec_secs:
+        if recording_time < self.settings.min_rec_secs:
             logger.debug(
                 "Recording was less than %s seconds.  Deleting recording.",
                 self.settings.min_rec_secs,
