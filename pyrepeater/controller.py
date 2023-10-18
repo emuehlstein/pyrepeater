@@ -20,6 +20,7 @@ class ControllerStatus:
     last_announcement: datetime
     last_used_dt: datetime
     idle_wait_start: datetime
+    idle_start_dt: datetime
     pending_messages: List[str]
 
 
@@ -45,6 +46,7 @@ class Controller:
             last_id=datetime.now(),
             last_announcement=datetime.now(),
             last_used_dt=datetime.now(),
+            idle_start_dt=None,
             idle_wait_start=None,
             pending_messages=["sounds/repeater_info.wav", "sounds/cw_id.wav"],
         )
@@ -106,7 +108,7 @@ class Controller:
                 ):
                     _inactivity_mins = (
                         timedelta.total_seconds(
-                            datetime.now() - self.status.last_used_dt
+                            datetime.now() - self.status.idle_start_dt
                         )
                         / 60
                     )
@@ -211,6 +213,7 @@ class Controller:
                 self.settings.idle_after_mins,
             )
             self.status.idle = True
+            self.status.idle_start_dt = datetime.now()
 
     async def repeaterinfo_timer(self) -> None:
         """repeater info timer"""
