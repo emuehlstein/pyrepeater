@@ -5,22 +5,28 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import List
 
-from repeater import Repeater
+from repeater import Repeater, RepeaterStatus
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class IdleStatus:
+    """a class to represent idle status"""
+
+    idle: bool
+    idle_start_dt: datetime
+    idle_wait_start: datetime
 
 
 @dataclass
 class ControllerStatus:
     """a class to represent the status of the controller"""
 
-    busy: bool  # is the repeater receiving a transmission
-    idle: bool  # has the repeater been idle for idle_after_mins
+    rpt_status: RepeaterStatus
+    idle: IdleStatus
     last_id: datetime
     last_announcement: datetime
-    last_used_dt: datetime
-    idle_wait_start: datetime
-    idle_start_dt: datetime
     pending_messages: List[str]
 
 
@@ -45,7 +51,7 @@ class Controller:
             idle=False,
             last_id=datetime.now(),
             last_announcement=datetime.now(),
-            last_used_dt=datetime.now(),
+            last_rcvd_dt=datetime.now(),
             idle_start_dt=None,
             idle_wait_start=None,
             pending_messages=["sounds/repeater_info.wav", "sounds/cw_id.wav"],
@@ -200,12 +206,12 @@ class Controller:
             self.recorder = await self.record_to_file()
 
         # mark the last used time
-        self.status.last_used_dt = datetime.now()
+        self.status.last_rcvd_dt = datetime.now()
 
     async def idle_timer(self) -> None:
         """idle timer"""
         if not self.status.idle and (
-            timedelta.total_seconds(datetime.now() - self.status.last_used_dt)
+            timedelta.total_seconds(datetime.now() - self.status.last_rcvd_dt)
             >= self.settings.idle_after_mins * 60
         ):
             logger.info(

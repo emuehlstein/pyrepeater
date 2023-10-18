@@ -8,6 +8,17 @@ import serial
 logger = logging.getLogger(__name__)
 
 
+@dataclass
+class RepeaterStatus:
+    """
+    a representation of the "busy" status of the repeater
+    ie. is the repeater currently receiving a transmission
+    """
+
+    busy: bool
+    last_rcvd_dt: datetime
+
+
 class Repeater:
     """a class to represent a repeater"""
 
