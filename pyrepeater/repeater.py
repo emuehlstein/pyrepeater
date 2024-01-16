@@ -27,9 +27,9 @@ class RepeaterStatus:
 class Repeater:
     """a class to represent a repeater"""
 
-    def __init__(self, serial_port: str, settings, status: RepeaterStatus) -> None:
+    def __init__(self, serial_port: str, settings) -> None:
         self.settings = settings
-        self.status = status
+        self.status: RepeaterStatus = RepeaterStatus()
 
         try:
             self.serial = serial.Serial(serial_port, 9600, timeout=1)
