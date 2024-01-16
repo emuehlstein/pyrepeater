@@ -22,9 +22,9 @@ class ControllerSettings(BaseSettings):
     fcc_id: str = "WRXC682"
     id_mins: int = 15  # minutes between ID messages
     rpt_info_mins: int = 60  # minutes between repeater info messages
-    id_when_idle: bool = False  # send ID messages when idle
-    idle_after_mins: int = 10  # minutes of inactivity before idle
-    active_after_sec: int = 2  # seconds of activity before leaving idle
+    id_when_asleep: bool = False  # send ID messages when asleep
+    sleep_after_mins: int = 10  # minutes of inactivity before sleep
+    active_after_sec: int = 2  # seconds of activity before leaving sleep
     min_rec_secs: int = 2  # minimum seconds to record
 
     class Settings(BaseSettings):
