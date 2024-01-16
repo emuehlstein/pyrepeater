@@ -20,8 +20,8 @@ class RepeaterStatus:
     ie. is the repeater currently receiving a transmission
     """
 
-    busy: bool
-    last_rcvd_dt: datetime
+    busy: bool = False
+    last_rcvd_dt: datetime = datetime.now()
 
 
 class Repeater:

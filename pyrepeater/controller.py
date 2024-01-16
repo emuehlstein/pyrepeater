@@ -14,17 +14,15 @@ logger = logging.getLogger(__name__)
 class SleepStatus:
     """a class to represent sleep status of the repeater ie. it has gone unused for some time"""
 
-    sleep: bool  # is sleep?
-    sleep_start_dt: datetime  # when did sleep start?
-    sleep_wait_start: datetime  # when did we start waiting for sleep?
+    sleep: bool = False  # is sleep?
+    sleep_start_dt: datetime = datetime.now()  # when did sleep start?
+    sleep_wait_start: datetime = datetime.now()  # when did we start waiting for sleep?
 
 
 @dataclass
 class ControllerStatus:
     """a class to represent the status of the controller and repeater announcments"""
 
-    rpt_status: RepeaterStatus
-    sleep: SleepStatus
     last_id: datetime
     last_announcement: datetime
     pending_messages: List[str]
@@ -42,7 +40,7 @@ class Recorder:
 class SleepManager:
     """a class which knows about repeater status and mangages sleep status"""
 
-    def __init__(self, repeater, settings, sleep_status) -> None:
+    def __init__(self, repeater, settings, sleep_status: SleepStatus) -> None:
         self.repeater: Repeater = repeater
         self.settings = settings
         self.sleep_status = sleep_status
@@ -55,16 +53,12 @@ class Controller:
         self.repeater: Repeater = repeater
         self.settings = settings
         self.recorder: Recorder = None
-        self.status = ControllerStatus(
-            rpt_status=RepeaterStatus(busy=False, last_rcvd_dt=datetime.now()),
-            sleep=SleepStatus(
-                sleep=False,
-                sleep_start_dt=datetime.now(),
-                sleep_wait_start=datetime.now(),
-            ),
+        self.sleep_status: SleepStatus = (SleepStatus(),)
+        self.repeater_status: RepeaterStatus = (RepeaterStatus(),)
+        self.status: ControllerStatus = ControllerStatus(
             last_id=datetime.now(),
             last_announcement=datetime.now(),
-            pending_messages=["sounds/repeater_info.wav", "sounds/cw_id.wav"],
+            pending_messages=[],
         )
 
     async def start_controller(self):
