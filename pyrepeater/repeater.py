@@ -1,6 +1,11 @@
-""" a module to represent a repeater """
+""" 
+A module to represent a repeater, its status, and provide an interface to it
+via a serial port
+"""
 
 import asyncio
+from dataclasses import dataclass
+from datetime import datetime
 import logging
 
 import serial

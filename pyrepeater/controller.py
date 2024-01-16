@@ -1,4 +1,4 @@
-""" repeater controller and logic"""
+""" repeater controller manages the state of the repeater, recordings, and announcements"""
 import logging
 import subprocess
 from dataclasses import dataclass
@@ -11,20 +11,20 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class IdleStatus:
-    """a class to represent idle status"""
+class SleepStatus:
+    """a class to represent idle status of the repeater ie. it has gone unused for some time"""
 
-    idle: bool
-    idle_start_dt: datetime
-    idle_wait_start: datetime
+    idle: bool  # is idle?
+    idle_start_dt: datetime  # when did idle start?
+    idle_wait_start: datetime  # when did we start waiting for idle?
 
 
 @dataclass
 class ControllerStatus:
-    """a class to represent the status of the controller"""
+    """a class to represent the status of the controller and repeater announcments"""
 
     rpt_status: RepeaterStatus
-    idle: IdleStatus
+    idle: SleepStatus
     last_id: datetime
     last_announcement: datetime
     pending_messages: List[str]
@@ -39,6 +39,15 @@ class Recorder:
     file_name: str
 
 
+class SleepManager:
+    """a class which knows about repeater status and mangages sleep status"""
+
+    def __init__(self, repeater, settings, sleep_status) -> None:
+        self.repeater: Repeater = repeater
+        self.settings = settings
+        self.sleep_status = sleep_status
+
+
 class Controller:
     """a class to represent a controller"""
 
@@ -48,12 +57,12 @@ class Controller:
         self.recorder: Recorder = None
         self.status = ControllerStatus(
             busy=False,
-            idle=False,
+            sleep=False,
             last_id=datetime.now(),
             last_announcement=datetime.now(),
             last_rcvd_dt=datetime.now(),
-            idle_start_dt=None,
-            idle_wait_start=None,
+            sleep_start_dt=None,
+            sleep_wait_start=None,
             pending_messages=["sounds/repeater_info.wav", "sounds/cw_id.wav"],
         )
 
@@ -62,6 +71,8 @@ class Controller:
 
         # assign some private status vars
         _wait_before_active = False
+
+        sleep_mgr = SleepManager(self.repeater, self.settings, self.status)
 
         while True:
             # check for timed events
@@ -77,8 +88,8 @@ class Controller:
                     self.status.busy = False
 
                 if _wait_before_active:
-                    # end the idle wait
-                    logger.debug("Returning to idle...")
+                    # end the sleep wait
+                    logger.debug("Returning to sleep...")
                     _wait_before_active = False
 
                 else:
@@ -99,37 +110,37 @@ class Controller:
                     # mark the repeater as busy
                     self.status.busy = True
 
-                # check if our idle flag is set, start waiting for idle
-                if self.status.idle and not _wait_before_active:
-                    logger.debug("Delaying switch to idle...")
-                    self.status.idle_wait_start = datetime.now()
+                # check if our sleep flag is set, start waiting for sleep
+                if self.status.sleep and not _wait_before_active:
+                    logger.debug("Delaying switch to sleep...")
+                    self.status.sleep_wait_start = datetime.now()
                     _wait_before_active = True
 
-                # check if we've been idle long enough, set to idle
+                # check if we've been sleep long enough, set to sleep
                 if _wait_before_active and (
                     timedelta.total_seconds(
-                        datetime.now() - self.status.idle_wait_start
+                        datetime.now() - self.status.sleep_wait_start
                     )
                     >= self.settings.active_after_sec
                 ):
                     _inactivity_mins = (
                         timedelta.total_seconds(
-                            datetime.now() - self.status.idle_start_dt
+                            datetime.now() - self.status.sleep_start_dt
                         )
                         / 60
                     )
 
                     # log the change of state then run actions
                     logger.info(
-                        "Ending idle state after %s mins of inactivity.",
+                        "Ending sleep state after %s mins of inactivity.",
                         _inactivity_mins,
                     )
 
                     # mark the repeater as active
-                    self.status.idle = False
+                    self.status.sleep = False
 
-                    # reset the idle start time, reset flag
-                    self.status.idle_wait_start = None
+                    # reset the sleep start time, reset flag
+                    self.status.sleep_wait_start = None
                     _wait_before_active = False
 
                 await self.when_repeater_is_busy()
@@ -208,18 +219,18 @@ class Controller:
         # mark the last used time
         self.status.last_rcvd_dt = datetime.now()
 
-    async def idle_timer(self) -> None:
-        """idle timer"""
-        if not self.status.idle and (
+    async def sleep_timer(self) -> None:
+        """sleep timer"""
+        if not self.status.sleep and (
             timedelta.total_seconds(datetime.now() - self.status.last_rcvd_dt)
-            >= self.settings.idle_after_mins * 60
+            >= self.settings.sleep_after_mins * 60
         ):
             logger.info(
-                "Entering idle state.  Last used over %s mins ago.",
-                self.settings.idle_after_mins,
+                "Entering sleep state.  Last used over %s mins ago.",
+                self.settings.sleep_after_mins,
             )
-            self.status.idle = True
-            self.status.idle_start_dt = datetime.now()
+            self.status.sleep = True
+            self.status.sleep_start_dt = datetime.now()
 
     async def repeaterinfo_timer(self) -> None:
         """repeater info timer"""
@@ -247,7 +258,7 @@ class Controller:
         ):
             return
 
-        if not self.status.idle or self.settings.id_when_idle:
+        if not self.status.sleep or self.settings.id_when_sleep:
             logger.info(
                 "Last CW ID was over %s minutes ago.  Playing ID.",
                 self.settings.id_mins,
@@ -257,6 +268,6 @@ class Controller:
 
     async def check_for_timed_events(self) -> None:
         """check for timed events ex. CW ID"""
-        await self.idle_timer()
+        await self.sleep_timer()
         await self.repeaterinfo_timer()
         await self.cwid_timer()
