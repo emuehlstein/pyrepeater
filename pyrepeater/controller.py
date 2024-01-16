@@ -30,21 +30,80 @@ class ControllerStatus:
 
 
 @dataclass
-class Recorder:
+class Recording:
     """a class to represent a recorder"""
 
     proc: subprocess.Popen
     start_time: datetime
     file_name: str
 
+class RecordingManager:
+    """ a class to manage recodrings """
+
+    async def __init__(self, repeater: Repeater, settings) -> None:
+        self.recording: Recording = None
+        self.repeater: Repeater = repeater
+       
+
+    async def update_status(self) -> None:
+        """ if repeater is busy, start recording, if it becomes free, stop recording """
+        if self.repeater.is_busy() and not self.recording:
+            await self.start_recording()
+        elif not self.repeater.is_busy() and self.recording:
+            await self.stop_recording()
+
+    
+    async def is_recording(self) -> bool:
+        """ is the recorder recording? """
+        return self.recording is not None
+    
+    async def start_recording(self) -> None:
+        """ start a recording """
+        current_time = datetime.now()
+        current_str = current_time.strftime("%Y-%m-%d_%H-%M-%S")
+        recording_name = f"recordings/{current_str}.wav"
+
+        # start recording
+        logger.debug("Recording to file: %s", recording_name)
+        process = subprocess.Popen(
+            ["rec", "-q", "-c", "1", "-r", "8000", recording_name]
+        )
+        self.recording = Recording(proc=process, start_time=current_time, file_name=recording_name)
+    
+    async def stop_recording(self) -> None:
+        """ stop the recording """
+        if not self.recorder:
+            return
+
+        # check how long the recording was
+        recording_time = timedelta.total_seconds(
+            datetime.now() - self.recorder.start_time
+        )
+
+        # end recording
+        self.recorder.proc.terminate()
+
+        logger.debug("Stopped recording. (%s s)", recording_time)
+
+        # if recording was less than min_rec_secs, delete it
+        if recording_time < self.settings.min_rec_secs:
+            logger.debug(
+                "Recording was less than %s seconds.  Deleting recording.",
+                self.settings.min_rec_secs,
+            )
+            subprocess.run(["rm", "-f", self.recorder.file_name], check=False)
+
+        self.recorder = None
+
+
 
 class SleepManager:
     """a class which knows about repeater status and mangages sleep status"""
 
-    def __init__(self, repeater, settings, sleep_status: SleepStatus) -> None:
+    def __init__(self, repeater, settings) -> None:
         self.repeater: Repeater = repeater
         self.settings = settings
-        self.sleep_status = sleep_status
+        self.sleep_status: SleepStatus = SleepStatus()
 
      async def sleep_timer(self) -> None:
         """sleep timer"""
@@ -72,6 +131,10 @@ class SleepManager:
             )
             self.sleep_status.sleep = False
             self.sleep_status.end_dt = datetime.now()
+
+        async def is_sleeping(self):
+            """ is the repeater sleeping? """
+            return self.sleep_status.sleep
     
 
 class Controller:
@@ -95,12 +158,14 @@ class Controller:
         # assign some private status vars
         _wait_before_active = False
 
-        # create a sleep manager
+        # create managers
         self.sleep_mgr = SleepManager(self.repeater, self.settings, self.status)
+        self.recording_mgr = RecordingManager(self.repeater, self.settings, self.status)
 
         while True:
             # check for timed events
-            await self.repeater.check_status()
+            await self.repeater.update_status()
+            await self.recorder.update_status()
             await self.check_for_timed_events()
 
 
@@ -186,45 +251,6 @@ class Controller:
 
         logger.info("Done playing pending messages.  Clearing queue...")
         self.status.pending_messages.clear()
-
-    async def record_to_file(self) -> Recorder:
-        """record incoming transmission to a file, return the recorder"""
-        current_time = datetime.now()
-        current_str = current_time.strftime("%Y-%m-%d_%H-%M-%S")
-        recording_name = f"recordings/{current_str}.wav"
-
-        # start recording
-        logger.debug("Recording to file: %s", recording_name)
-        process = subprocess.Popen(
-            ["rec", "-q", "-c", "1", "-r", "8000", recording_name]
-        )
-        rec = Recorder(proc=process, start_time=current_time, file_name=recording_name)
-        return rec
-
-    async def stop_recording(self) -> None:
-        """stop recording"""
-        if not self.recorder:
-            return
-
-        # check how long the recording was
-        recording_time = timedelta.total_seconds(
-            datetime.now() - self.recorder.start_time
-        )
-
-        # end recording
-        self.recorder.proc.terminate()
-
-        logger.debug("Stopped recording. (%s s)", recording_time)
-
-        # if recording was less than min_rec_secs, delete it
-        if recording_time < self.settings.min_rec_secs:
-            logger.debug(
-                "Recording was less than %s seconds.  Deleting recording.",
-                self.settings.min_rec_secs,
-            )
-            subprocess.run(["rm", "-f", self.recorder.file_name], check=False)
-
-        self.recorder = None
 
     async def when_repeater_is_free(self) -> None:
         """actions to take when the repeater is free"""
