@@ -61,13 +61,9 @@ class Controller:
                 sleep=False,
                 sleep_start_dt=datetime.now(),
                 sleep_wait_start=datetime.now(),
-            busy=False,
-            sleep=False,
+            ),
             last_id=datetime.now(),
             last_announcement=datetime.now(),
-            last_rcvd_dt=datetime.now(),
-            sleep_start_dt=None,
-            sleep_wait_start=None,
             pending_messages=["sounds/repeater_info.wav", "sounds/cw_id.wav"],
         )
 
