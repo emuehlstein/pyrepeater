@@ -12,11 +12,11 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class SleepStatus:
-    """a class to represent idle status of the repeater ie. it has gone unused for some time"""
+    """a class to represent sleep status of the repeater ie. it has gone unused for some time"""
 
-    idle: bool  # is idle?
-    idle_start_dt: datetime  # when did idle start?
-    idle_wait_start: datetime  # when did we start waiting for idle?
+    sleep: bool  # is sleep?
+    sleep_start_dt: datetime  # when did sleep start?
+    sleep_wait_start: datetime  # when did we start waiting for sleep?
 
 
 @dataclass
@@ -24,7 +24,7 @@ class ControllerStatus:
     """a class to represent the status of the controller and repeater announcments"""
 
     rpt_status: RepeaterStatus
-    idle: SleepStatus
+    sleep: SleepStatus
     last_id: datetime
     last_announcement: datetime
     pending_messages: List[str]
@@ -56,6 +56,11 @@ class Controller:
         self.settings = settings
         self.recorder: Recorder = None
         self.status = ControllerStatus(
+            rpt_status=RepeaterStatus(busy=False, last_rcvd_dt=datetime.now()),
+            sleep=SleepStatus(
+                sleep=False,
+                sleep_start_dt=datetime.now(),
+                sleep_wait_start=datetime.now(),
             busy=False,
             sleep=False,
             last_id=datetime.now(),
