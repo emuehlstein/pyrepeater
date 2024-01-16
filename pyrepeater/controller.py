@@ -15,9 +15,10 @@ class SleepStatus:
     """a class to represent sleep status of the repeater ie. it has gone unused for some time"""
 
     sleep: bool = False  # is sleep?
-    sleep_start_dt: datetime = datetime.now()  # when did sleep start?
-    sleep_wait_start: datetime = datetime.now()  # when did we start waiting for sleep?
-
+    start_dt: datetime = datetime.now()  # when did sleep start?
+    end_dt: datetime = None  # when did sleep end?
+    sleep_wait_start: datetime = None  # when did we start waiting for sleep?
+    wake_wait_start: datetime = None  # when did we start waiting for wake?
 
 @dataclass
 class ControllerStatus:
@@ -45,6 +46,33 @@ class SleepManager:
         self.settings = settings
         self.sleep_status = sleep_status
 
+     async def sleep_timer(self) -> None:
+        """sleep timer"""
+
+        # sleep after 'sleep_after_mins' minutes of inactivity
+        if not self.sleep_status.sleep and (
+            timedelta.total_seconds(datetime.now() - self.repeater.last_rcvd_dt)
+            >= self.settings.sleep_after_mins * 60
+        ):
+            logger.info(
+                "Entering sleep state.  Last used over %s mins ago.",
+                self.settings.sleep_after_mins,
+            )
+            self.sleep_status.sleep = True
+            self.sleep_status.start_dt = datetime.now()
+
+        # wake after 'wake_after_sec' seconds of activity
+        if self.sleep_status.sleep and (
+            timedelta.total_seconds(datetime.now() - self.repeater.last_rcvd_dt)
+            <= self.settings.wake_after_sec
+        ):
+            logger.info(
+                "Leaving sleep state.  Active for %s seconds.",
+                self.settings.wake_after_sec,
+            )
+            self.sleep_status.sleep = False
+            self.sleep_status.end_dt = datetime.now()
+    
 
 class Controller:
     """a class to represent a controller"""
@@ -67,11 +95,14 @@ class Controller:
         # assign some private status vars
         _wait_before_active = False
 
-        sleep_mgr = SleepManager(self.repeater, self.settings, self.status)
+        # create a sleep manager
+        self.sleep_mgr = SleepManager(self.repeater, self.settings, self.status)
 
         while True:
             # check for timed events
+            await self.repeater.check_status()
             await self.check_for_timed_events()
+
 
             # check if repeater is free
             if not self.repeater.is_busy():
@@ -214,18 +245,7 @@ class Controller:
         # mark the last used time
         self.status.last_rcvd_dt = datetime.now()
 
-    async def sleep_timer(self) -> None:
-        """sleep timer"""
-        if not self.status.sleep and (
-            timedelta.total_seconds(datetime.now() - self.status.last_rcvd_dt)
-            >= self.settings.sleep_after_mins * 60
-        ):
-            logger.info(
-                "Entering sleep state.  Last used over %s mins ago.",
-                self.settings.sleep_after_mins,
-            )
-            self.status.sleep = True
-            self.status.sleep_start_dt = datetime.now()
+   
 
     async def repeaterinfo_timer(self) -> None:
         """repeater info timer"""
