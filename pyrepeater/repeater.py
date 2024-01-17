@@ -1,6 +1,11 @@
-""" a module to represent a repeater """
+""" 
+A module to represent a repeater, its status, and provide an interface to it
+via a serial port
+"""
 
 import asyncio
+from dataclasses import dataclass
+from datetime import datetime
 import logging
 
 import serial
@@ -8,11 +13,23 @@ import serial
 logger = logging.getLogger(__name__)
 
 
+@dataclass
+class RepeaterStatus:
+    """
+    a representation of the "busy" status of the repeater
+    ie. is the repeater currently receiving a transmission
+    """
+
+    busy: bool = False
+    last_rcvd_dt: datetime = datetime.now()
+
+
 class Repeater:
     """a class to represent a repeater"""
 
     def __init__(self, serial_port: str, settings) -> None:
         self.settings = settings
+        self.status: RepeaterStatus = RepeaterStatus()
 
         try:
             self.serial = serial.Serial(serial_port, 9600, timeout=1)
@@ -27,7 +44,23 @@ class Repeater:
 
         self.settings = settings
 
-    def is_busy(self) -> bool:
+    async def check_status(self) -> None:
+        """
+        check the status of the repeater
+        """
+        if not self.status.busy and await self.is_busy():
+            self.status.busy = True
+            self.status.last_rcvd_dt = datetime.now()
+            logger.debug("Repeater busy at %s", self.status.last_rcvd_dt)
+        elif self.status.busy and not await self.is_busy():
+            self.status.busy = False
+            logger.debug("Repeater inactive at %s", datetime.now())
+
+    async def check_last_rcvd(self) -> datetime:
+        """reutrn the last time the repeater received a transmission"""
+        return self.status.last_rcvd_dt
+
+    async def is_busy(self) -> bool:
         """
         check if the repeater is busy
         """
