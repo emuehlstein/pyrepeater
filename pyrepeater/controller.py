@@ -140,6 +140,9 @@ class Controller:
             timedelta.total_seconds(datetime.now() - self.status.last_announcement)
             >= self.settings.rpt_info_mins * 60
         ):
+            return
+
+        if not await self.sleep_mgr.is_sleeping() or self.settings.rpt_info_when_asleep:
             logger.info(
                 "Last announcement was over %s mins ago.  Playing announcement.",
                 self.settings.rpt_info_mins,
