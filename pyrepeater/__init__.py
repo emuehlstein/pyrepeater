@@ -33,6 +33,7 @@ async def main():
 
     # start the controller
     try:
+        logger.info("Starting controller...")
         await ctlr.start_controller()
     except KeyboardInterrupt:
         logger.info("Exiting")

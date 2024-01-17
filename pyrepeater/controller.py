@@ -138,7 +138,7 @@ class Controller:
         """repeater info timer"""
         if (
             timedelta.total_seconds(datetime.now() - self.status.last_announcement)
-            >= self.settings.rpt_info_mins * 60
+            <= self.settings.rpt_info_mins * 60
         ):
             return
 

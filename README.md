@@ -51,14 +51,17 @@ the pipenv virtual environment
  - RPT_INFO_MINS=60
     - period of repeater info annoucements in minutes (int)
 
- - ID_WHEN_IDLE=False
+ - ID_WHEN_ASLEEP=False
     - send CW IDs when repeater is idle for a prolonged period
 
- - IDLE_AFTER_MINS=10
-    - after this many minutes of inactivity, put the repeater in idle mode
+ - RPT_INFO_WHEN_ASLEEP=False
+    - send repeater info messages when repeater is idle for a prolonged period
 
- - ACTIVE_AFTER_SEC=2
-    - if repeater is idle and becomes busy, wait this many seconds (int) before transitioning back to active state (prevents short key ups from disrupting idle)
+ - SLEEP_AFTER_MINS=10
+    - after this many minutes of inactivity, put the repeater in sleep mode
+
+ - WAKE_AFTER_SEC=2
+    - if repeater is asleep and becomes busy, wait this many seconds (int) before transitioning back to active state (prevents short key ups from disrupting sleep)
 
  - MIN_REC_SEC=2
     - minimum seconds for a valid recording (wav file will be deleted if it does not exceed this length)
