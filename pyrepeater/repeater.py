@@ -55,8 +55,9 @@ class Repeater:
         elif self.status.busy and not await self.is_busy():
             self.status.busy = False
             logger.debug("Repeater inactive at %s", datetime.now())
-    
+
     async def check_last_rcvd(self) -> datetime:
+        """reutrn the last time the repeater received a transmission"""
         return self.status.last_rcvd_dt
 
     async def is_busy(self) -> bool:

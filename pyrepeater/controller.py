@@ -66,7 +66,7 @@ class RecordingManager:
 
         # start recording
         logger.debug("Recording to file: %s", recording_name)
-        process = subprocess.Popen(
+        process = subprocess.Popen(  # pylint: disable=consider-using-with
             ["rec", "-q", "-c", "1", "-r", "8000", recording_name]
         )
         self.recording = Recording(
