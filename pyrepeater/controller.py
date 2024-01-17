@@ -20,6 +20,7 @@ class SleepStatus:
     sleep_wait_start: datetime = None  # when did we start waiting for sleep?
     wake_wait_start: datetime = None  # when did we start waiting for wake?
 
+
 @dataclass
 class ControllerStatus:
     """a class to represent the status of the controller and repeater announcments"""
@@ -37,28 +38,28 @@ class Recording:
     start_time: datetime
     file_name: str
 
+
 class RecordingManager:
-    """ a class to manage recodrings """
+    """a class to manage recodrings"""
 
     async def __init__(self, repeater: Repeater, settings) -> None:
         self.recording: Recording = None
-        self.repeater: Repeater = repeater
-       
+        self.repeater = repeater
+        self.settings = settings
 
     async def update_status(self) -> None:
-        """ if repeater is busy, start recording, if it becomes free, stop recording """
+        """if repeater is busy, start recording, if it becomes free, stop recording"""
         if self.repeater.is_busy() and not self.recording:
             await self.start_recording()
         elif not self.repeater.is_busy() and self.recording:
             await self.stop_recording()
 
-    
     async def is_recording(self) -> bool:
-        """ is the recorder recording? """
+        """is the recorder recording?"""
         return self.recording is not None
-    
+
     async def start_recording(self) -> None:
-        """ start a recording """
+        """start a recording"""
         current_time = datetime.now()
         current_str = current_time.strftime("%Y-%m-%d_%H-%M-%S")
         recording_name = f"recordings/{current_str}.wav"
@@ -68,20 +69,22 @@ class RecordingManager:
         process = subprocess.Popen(
             ["rec", "-q", "-c", "1", "-r", "8000", recording_name]
         )
-        self.recording = Recording(proc=process, start_time=current_time, file_name=recording_name)
-    
+        self.recording = Recording(
+            proc=process, start_time=current_time, file_name=recording_name
+        )
+
     async def stop_recording(self) -> None:
-        """ stop the recording """
-        if not self.recorder:
+        """stop the recording"""
+        if not self.recording:
             return
 
         # check how long the recording was
         recording_time = timedelta.total_seconds(
-            datetime.now() - self.recorder.start_time
+            datetime.now() - self.recording.start_time
         )
 
         # end recording
-        self.recorder.proc.terminate()
+        self.recording.proc.terminate()
 
         logger.debug("Stopped recording. (%s s)", recording_time)
 
@@ -91,10 +94,9 @@ class RecordingManager:
                 "Recording was less than %s seconds.  Deleting recording.",
                 self.settings.min_rec_secs,
             )
-            subprocess.run(["rm", "-f", self.recorder.file_name], check=False)
+            subprocess.run(["rm", "-f", self.recording.file_name], check=False)
 
-        self.recorder = None
-
+        self.recording = None
 
 
 class SleepManager:
@@ -105,7 +107,7 @@ class SleepManager:
         self.settings = settings
         self.sleep_status: SleepStatus = SleepStatus()
 
-     async def sleep_timer(self) -> None:
+    async def sleep_timer(self) -> None:
         """sleep timer"""
 
         # sleep after 'sleep_after_mins' minutes of inactivity
@@ -132,10 +134,10 @@ class SleepManager:
             self.sleep_status.sleep = False
             self.sleep_status.end_dt = datetime.now()
 
-        async def is_sleeping(self):
-            """ is the repeater sleeping? """
-            return self.sleep_status.sleep
-    
+    async def is_sleeping(self):
+        """is the repeater sleeping?"""
+        return self.sleep_status.sleep
+
 
 class Controller:
     """a class to represent a controller"""
@@ -143,7 +145,8 @@ class Controller:
     def __init__(self, repeater, settings) -> None:
         self.repeater: Repeater = repeater
         self.settings = settings
-        self.recorder: Recorder = None
+        self.recording_mgr: RecordingManager = None
+        self.sleep_mgr: SleepManager = None
         self.sleep_status: SleepStatus = (SleepStatus(),)
         self.repeater_status: RepeaterStatus = (RepeaterStatus(),)
         self.status: ControllerStatus = ControllerStatus(
@@ -164,77 +167,9 @@ class Controller:
 
         while True:
             # check for timed events
-            await self.repeater.update_status()
-            await self.recorder.update_status()
+            await self.repeater.check_status()
+            await self.recording_mgr.update_status()
             await self.check_for_timed_events()
-
-
-            # check if repeater is free
-            if not self.repeater.is_busy():
-                # check if our busy flag is set
-                if self.status.busy:
-                    # log the change of state then run actions
-                    logger.debug("Receiver is free.")
-                    # mark the repeater as not busy
-                    self.status.busy = False
-
-                if _wait_before_active:
-                    # end the sleep wait
-                    logger.debug("Returning to sleep...")
-                    _wait_before_active = False
-
-                else:
-                    if self.recorder:
-                        _rec_length = timedelta.total_seconds(
-                            datetime.now() - self.recorder.start_time
-                        )
-                        logger.info("Recorded %.1f seconds.", _rec_length)
-
-                await self.when_repeater_is_free()
-
-            # check if repeater is busy
-            elif self.repeater.is_busy():
-                # check if our busy flag is set
-                if not self.status.busy:
-                    # log the change of state then run actions
-                    logger.debug("Receiver is busy.")
-                    # mark the repeater as busy
-                    self.status.busy = True
-
-                # check if our sleep flag is set, start waiting for sleep
-                if self.status.sleep and not _wait_before_active:
-                    logger.debug("Delaying switch to sleep...")
-                    self.status.sleep_wait_start = datetime.now()
-                    _wait_before_active = True
-
-                # check if we've been sleep long enough, set to sleep
-                if _wait_before_active and (
-                    timedelta.total_seconds(
-                        datetime.now() - self.status.sleep_wait_start
-                    )
-                    >= self.settings.active_after_sec
-                ):
-                    _inactivity_mins = (
-                        timedelta.total_seconds(
-                            datetime.now() - self.status.sleep_start_dt
-                        )
-                        / 60
-                    )
-
-                    # log the change of state then run actions
-                    logger.info(
-                        "Ending sleep state after %s mins of inactivity.",
-                        _inactivity_mins,
-                    )
-
-                    # mark the repeater as active
-                    self.status.sleep = False
-
-                    # reset the sleep start time, reset flag
-                    self.status.sleep_wait_start = None
-                    _wait_before_active = False
-
-                await self.when_repeater_is_busy()
 
     async def play_pending_messages(self, wav_files: List[str]) -> None:
         """play the list of wav files in pending_messages"""
@@ -254,24 +189,11 @@ class Controller:
 
     async def when_repeater_is_free(self) -> None:
         """actions to take when the repeater is free"""
-        # stop recording
-        await self.stop_recording()
 
         if self.status.pending_messages:
             await self.repeater.serial_enable_tx(self.repeater)
             await self.play_pending_messages(self.status.pending_messages)
             await self.repeater.serial_disable_tx(self.repeater)
-
-    async def when_repeater_is_busy(self) -> None:
-        """actions to take when the repeater is busy"""
-        # start recording
-        if not self.recorder:
-            self.recorder = await self.record_to_file()
-
-        # mark the last used time
-        self.status.last_rcvd_dt = datetime.now()
-
-   
 
     async def repeaterinfo_timer(self) -> None:
         """repeater info timer"""
@@ -299,7 +221,7 @@ class Controller:
         ):
             return
 
-        if not self.status.sleep or self.settings.id_when_sleep:
+        if not self.sleep_mgr.is_sleeping() or self.settings.id_when_sleep:
             logger.info(
                 "Last CW ID was over %s minutes ago.  Playing ID.",
                 self.settings.id_mins,
@@ -309,6 +231,6 @@ class Controller:
 
     async def check_for_timed_events(self) -> None:
         """check for timed events ex. CW ID"""
-        await self.sleep_timer()
+        await self.sleep_mgr.sleep_timer()
         await self.repeaterinfo_timer()
         await self.cwid_timer()

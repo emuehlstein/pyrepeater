@@ -27,7 +27,7 @@ class RepeaterStatus:
 class Repeater:
     """a class to represent a repeater"""
 
-    def __init__(self, serial_port: str, settings) -> None:
+    async def __init__(self, serial_port: str, settings) -> None:
         self.settings = settings
         self.status: RepeaterStatus = RepeaterStatus()
 
@@ -43,16 +43,16 @@ class Repeater:
             raise err
 
         self.settings = settings
-    
-    def check_status(self) -> RepeaterStatus:
+
+    async def check_status(self) -> None:
         """
         check the status of the repeater
         """
-        if not self.status.busy && self.is_busy():
+        if not self.status.busy and self.is_busy():
             self.status.busy = True
             self.status.last_rcvd_dt = datetime.now()
             logger.debug("Repeater busy at %s", self.status.last_rcvd_dt)
-        elif self.status.busy && not self.is_busy():
+        elif self.status.busy and not self.is_busy():
             self.status.busy = False
             logger.debug("Repeater active at %s", datetime.now())
 
