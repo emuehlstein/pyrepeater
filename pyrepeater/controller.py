@@ -1,6 +1,5 @@
 """ repeater controller manages the state of the repeater, recordings, and announcements"""
 import logging
-from logging.handlers import WatchedFileHandler
 import subprocess
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -98,7 +97,9 @@ class RecordingManager:
             subprocess.run(["rm", "-f", self.recording.file_name], check=False)
 
         else:
-            logger.info("Recorded %s secs to %s", recording_time, self.recording.file_name)
+            logger.info(
+                "Recorded %s secs to %s", recording_time, self.recording.file_name
+            )
 
         self.recording = None
 
@@ -116,7 +117,9 @@ class SleepManager:
 
         # sleep after 'sleep_after_mins' minutes of inactivity
         if not self.sleep_status.sleep and (
-            timedelta.total_seconds(datetime.now() - await self.repeater.check_last_rcvd())
+            timedelta.total_seconds(
+                datetime.now() - await self.repeater.check_last_rcvd()
+            )
             >= self.settings.sleep_after_mins * 60
         ):
             logger.info(
@@ -128,7 +131,9 @@ class SleepManager:
 
         # wake after 'wake_after_sec' seconds of activity
         if self.sleep_status.sleep and (
-            timedelta.total_seconds(datetime.now() - await self.repeater.check_last_rcvd())
+            timedelta.total_seconds(
+                datetime.now() - await self.repeater.check_last_rcvd()
+            )
             <= self.settings.wake_after_sec
         ):
             logger.info(
@@ -154,8 +159,8 @@ class Controller:
         self.sleep_status: SleepStatus = (SleepStatus(),)
         self.repeater_status: RepeaterStatus = (RepeaterStatus(),)
         self.status: ControllerStatus = ControllerStatus(
-            last_id=datetime(1970,1,1),
-            last_announcement=datetime(1970,1,1),
+            last_id=datetime(1970, 1, 1),
+            last_announcement=datetime(1970, 1, 1),
             pending_messages=[],
         )
 
@@ -208,7 +213,6 @@ class Controller:
             timedelta.total_seconds(datetime.now() - self.status.last_announcement)
             >= self.settings.rpt_info_mins * 60
         ):
-
             logger.info(
                 "Last announcement was over %s mins ago.  Playing announcement.",
                 self.settings.rpt_info_mins,
