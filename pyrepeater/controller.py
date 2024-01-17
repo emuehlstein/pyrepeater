@@ -1,5 +1,6 @@
 """ repeater controller manages the state of the repeater, recordings, and announcements"""
 import logging
+from logging.handlers import WatchedFileHandler
 import subprocess
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -42,16 +43,16 @@ class Recording:
 class RecordingManager:
     """a class to manage recodrings"""
 
-    async def __init__(self, repeater: Repeater, settings) -> None:
+    def __init__(self, repeater: Repeater, settings) -> None:
         self.recording: Recording = None
         self.repeater = repeater
         self.settings = settings
 
     async def update_status(self) -> None:
         """if repeater is busy, start recording, if it becomes free, stop recording"""
-        if self.repeater.is_busy() and not self.recording:
+        if await self.repeater.is_busy() and not self.recording:
             await self.start_recording()
-        elif not self.repeater.is_busy() and self.recording:
+        elif not await self.repeater.is_busy() and self.recording:
             await self.stop_recording()
 
     async def is_recording(self) -> bool:
@@ -96,6 +97,9 @@ class RecordingManager:
             )
             subprocess.run(["rm", "-f", self.recording.file_name], check=False)
 
+        else:
+            logger.info("Recorded %s secs to %s", recording_time, self.recording.file_name)
+
         self.recording = None
 
 
@@ -112,7 +116,7 @@ class SleepManager:
 
         # sleep after 'sleep_after_mins' minutes of inactivity
         if not self.sleep_status.sleep and (
-            timedelta.total_seconds(datetime.now() - self.repeater.last_rcvd_dt)
+            timedelta.total_seconds(datetime.now() - await self.repeater.check_last_rcvd())
             >= self.settings.sleep_after_mins * 60
         ):
             logger.info(
@@ -124,7 +128,7 @@ class SleepManager:
 
         # wake after 'wake_after_sec' seconds of activity
         if self.sleep_status.sleep and (
-            timedelta.total_seconds(datetime.now() - self.repeater.last_rcvd_dt)
+            timedelta.total_seconds(datetime.now() - await self.repeater.check_last_rcvd())
             <= self.settings.wake_after_sec
         ):
             logger.info(
@@ -150,8 +154,8 @@ class Controller:
         self.sleep_status: SleepStatus = (SleepStatus(),)
         self.repeater_status: RepeaterStatus = (RepeaterStatus(),)
         self.status: ControllerStatus = ControllerStatus(
-            last_id=datetime.now(),
-            last_announcement=datetime.now(),
+            last_id=datetime(1970,1,1),
+            last_announcement=datetime(1970,1,1),
             pending_messages=[],
         )
 
@@ -162,14 +166,17 @@ class Controller:
         _wait_before_active = False
 
         # create managers
-        self.sleep_mgr = SleepManager(self.repeater, self.settings, self.status)
-        self.recording_mgr = RecordingManager(self.repeater, self.settings, self.status)
+        self.sleep_mgr = SleepManager(self.repeater, self.settings)
+        self.recording_mgr = RecordingManager(self.repeater, self.settings)
 
         while True:
             # check for timed events
             await self.repeater.check_status()
             await self.recording_mgr.update_status()
             await self.check_for_timed_events()
+
+            if not await self.repeater.is_busy():
+                await self.when_repeater_is_free()
 
     async def play_pending_messages(self, wav_files: List[str]) -> None:
         """play the list of wav files in pending_messages"""
@@ -199,18 +206,17 @@ class Controller:
         """repeater info timer"""
         if (
             timedelta.total_seconds(datetime.now() - self.status.last_announcement)
-            <= self.settings.rpt_info_mins * 60
+            >= self.settings.rpt_info_mins * 60
         ):
-            return
 
-        logger.info(
-            "Last announcement was over %s mins ago.  Playing announcement.",
-            self.settings.rpt_info_mins,
-        )
-        self.status.pending_messages.append("sounds/repeater_info.wav")
-        self.status.last_announcement = datetime.now()
-        self.status.pending_messages.append("sounds/cw_id.wav")
-        self.status.last_id = datetime.now()
+            logger.info(
+                "Last announcement was over %s mins ago.  Playing announcement.",
+                self.settings.rpt_info_mins,
+            )
+            self.status.pending_messages.append("sounds/repeater_info.wav")
+            self.status.last_announcement = datetime.now()
+            self.status.pending_messages.append("sounds/cw_id.wav")
+            self.status.last_id = datetime.now()
 
     async def cwid_timer(self) -> None:
         """when to play CW ID"""
@@ -221,7 +227,7 @@ class Controller:
         ):
             return
 
-        if not self.sleep_mgr.is_sleeping() or self.settings.id_when_sleep:
+        if not await self.sleep_mgr.is_sleeping() or self.settings.id_when_asleep:
             logger.info(
                 "Last CW ID was over %s minutes ago.  Playing ID.",
                 self.settings.id_mins,
