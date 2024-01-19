@@ -40,7 +40,7 @@ class SleepManager:
         self.sleep_status: SleepStatus = SleepStatus()
 
     async def sleep_timer(self) -> None:
-        """sleep timer"""
+        """sleep timer, called periodically by the main loop"""
 
         # sleep after 'sleep_after_mins' minutes of inactivity
         if not self.sleep_status.sleep and (
@@ -70,7 +70,7 @@ class SleepManager:
             self.sleep_status.sleep = False
             self.sleep_status.end_dt = datetime.now()
 
-    async def is_sleeping(self):
+    async def is_sleeping(self) -> bool:
         """is the repeater sleeping?"""
         return self.sleep_status.sleep
 
@@ -94,45 +94,50 @@ class Controller:
     async def start_controller(self):
         """start the controller"""
 
-        # assign some private status vars
-        _wait_before_active = False
-
         # create managers
         self.sleep_mgr = SleepManager(self.repeater, self.settings)
         self.recording_mgr = RecordingManager(self.repeater, self.settings)
 
+        # main controller loop
         while True:
-            # check for timed events
+            # check the repeater status
             await self.repeater.check_status()
+
+            # update the recording status
             await self.recording_mgr.update_status()
+
+            # check for timed events (ex. annoucements and CW ID)
             await self.check_for_timed_events()
 
-            if not await self.repeater.is_busy():
-                await self.when_repeater_is_free()
+            # otherwise, if repeater is not busy, play pending messages
+            if not await self.repeater.is_busy() and self.status.pending_messages:
+                await self.play_pending_messages(self.status.pending_messages)
+                await self.repeater.serial_disable_tx(self.repeater)
 
     async def play_pending_messages(self, wav_files: List[str]) -> None:
         """play the list of wav files in pending_messages"""
 
-        for message in wav_files:
-            # play the wav file
-            logger.info("Playing wav file: %s", message)
-            subprocess.run(
-                ["play", "-q", message],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                check=False,
-            )
-
-        logger.info("Done playing pending messages.  Clearing queue...")
-        self.status.pending_messages.clear()
-
-    async def when_repeater_is_free(self) -> None:
-        """actions to take when the repeater is free"""
-
         if self.status.pending_messages:
+            logger.debug("Playing pending messages...")
+
+            # start tx
             await self.repeater.serial_enable_tx(self.repeater)
-            await self.play_pending_messages(self.status.pending_messages)
+
+            for message in wav_files:
+                # play the wav file
+                logger.info("Playing wav file: %s", message)
+                subprocess.run(
+                    ["play", "-q", message],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    check=False,
+                )
+
+            # stop tx
             await self.repeater.serial_disable_tx(self.repeater)
+
+        logger.debug("Done playing pending messages.  Clearing queue...")
+        self.status.pending_messages.clear()
 
     async def repeaterinfo_timer(self) -> None:
         """repeater info timer"""
