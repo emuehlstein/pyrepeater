@@ -1,0 +1,8 @@
+# Ignore .env files
+**/.env
+
+# Ignore pipenv lockfiles
+**/Pipfile.lock
+
+# Ignore all files in the recordings directory
+pyrepeater/recordings/*
