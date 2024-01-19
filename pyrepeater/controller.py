@@ -116,31 +116,36 @@ class Controller:
 
     async def play_pending_messages(self, wav_files: List[str]) -> None:
         """play the list of wav files in pending_messages"""
+        if not self.status.pending_messages:
+            logger.debug("No pending messages to play.")
+            return
 
-        if self.status.pending_messages:
-            logger.debug("Playing pending messages...")
+        logger.debug("Playing pending messages...")
 
-            # start tx
-            await self.repeater.serial_enable_tx(self.repeater)
+        # start tx
+        await self.repeater.serial_enable_tx(self.repeater)
 
-            for message in wav_files:
-                # play the wav file
-                logger.info("Playing wav file: %s", message)
-                subprocess.run(
-                    ["play", "-q", message],
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                    check=False,
-                )
+        for message in wav_files:
+            # play the wav file
+            logger.info("Playing wav file: %s", message)
+            subprocess.run(
+                ["play", "-q", message],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                check=False,
+            )
 
-            # stop tx
-            await self.repeater.serial_disable_tx(self.repeater)
+        # stop tx
+        await self.repeater.serial_disable_tx(self.repeater)
 
         logger.debug("Done playing pending messages.  Clearing queue...")
         self.status.pending_messages.clear()
 
     async def repeaterinfo_timer(self) -> None:
-        """repeater info timer"""
+        """
+        checks if the repeater info announcement should be played based on the
+        last time it was played and the 'rpt_info_mins' setting
+        """
         if (
             timedelta.total_seconds(datetime.now() - self.status.last_announcement)
             <= self.settings.rpt_info_mins * 60
@@ -158,7 +163,10 @@ class Controller:
             self.status.last_id = datetime.now()
 
     async def cwid_timer(self) -> None:
-        """when to play CW ID"""
+        """
+        checks if the CW ID should be played based on the last time it was
+        played and the 'id_mins' setting
+        """
 
         if (
             timedelta.total_seconds(datetime.now() - self.status.last_id)
