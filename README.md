@@ -3,17 +3,25 @@
 a software controller for radio repeaters on raspberry pi
 
 tested with:
-- Raspberry GNU/Linux 11 (bullseye)
+- Raspberry GNU/Linux 12 (bookworm)
 - serial interface board from www.gmrstwowayradio.com
 - FTDI USB -> Serial cable
 - Retevis 97S
 
 ## installation
-1) clone the repository
-2) install Python 3.11
-3) install pipenv
-4) cd to pyrepeater/pyrepeater/
-5) run `pipenv install`
+1) Install Raspberry Pi OS 13
+2) install sox (audio) `sudo apt install sox
+3) blacklist the hdmi drivers `sudo vim /etc/boot/firmware/config.txt` comment the following lines: ```
+# Enable DRM VC4 V3D driver
+#dtoverlay=vc4-kms-v3d
+#max_framebuffers=2
+```
+4) blacklist the headphone driver `sudo vim /etc/modprobe.d/blacklist-alsa.conf` and add the line `blacklist snd_bcm2835`
+5) reboot
+1) clone the repository into ~/src/
+2) install Python 3.11 & pipenv `sudo apt install pipenv`
+3) cd to ~/src/pyrepeater/pyrepeater/
+4) run `pipenv install`
 
 ## configuration
 1) replace the files in the "sounds" directory with wav files crafted for your repeater.
