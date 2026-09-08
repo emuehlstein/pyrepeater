@@ -3,6 +3,8 @@
 import logging
 import re
 import subprocess
+import tempfile
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -16,20 +18,24 @@ def decode_dtmf(wav_file: str) -> str:
     noise from the radio (squelch tail, carrier) swamps the DTMF tones and
     multimon-ng fails to lock on despite the tones being present in the audio.
     """
-    # pipe: sox bandpass filter → multimon-ng stdin
-    sox_proc = subprocess.Popen(
-        ["sox", wav_file, "-t", "wav", "-", "sinc", "600-1800"],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL,
-    )
-    result = subprocess.run(
-        ["multimon-ng", "-a", "DTMF", "-t", "wav", "-"],
-        stdin=sox_proc.stdout,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    sox_proc.wait()
+    # multimon-ng can't reliably read WAV from stdin (requires X display),
+    # so filter to a temp file then decode from it.
+    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+        tmp_path = tmp.name
+    try:
+        subprocess.run(
+            ["sox", wav_file, tmp_path, "sinc", "600-1800"],
+            check=False,
+            stderr=subprocess.DEVNULL,
+        )
+        result = subprocess.run(
+            ["multimon-ng", "-a", "DTMF", "-t", "wav", tmp_path],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    finally:
+        os.unlink(tmp_path)
     digits = "".join(DTMF_LINE_RE.findall(result.stdout))
     return digits
 
