@@ -13,9 +13,15 @@ tested with:
 
 ## installation
 
-1. Install Raspberry Pi OS 13
-2. Install sox (audio) with `sudo apt install sox`
-3. Blacklist the HDMI drivers `sudo vim /etc/boot/firmware/config.txt` and comment the following lines:
+1. Install Raspberry Pi OS 12 (Bookworm).
+2. Install the system dependencies:
+
+   ```sh
+   sudo apt update
+   sudo apt install --yes pipenv sox
+   ```
+
+3. Blacklist the HDMI drivers by editing `/boot/firmware/config.txt` and commenting the following lines:
 
    ```ini
    # Enable DRM VC4 V3D driver
@@ -23,23 +29,65 @@ tested with:
    #max_framebuffers=2
    ```
 
-4. Blacklist the headphone driver `sudo vim /etc/modprobe.d/blacklist-alsa.conf` and add the line `blacklist snd_bcm2835`
-5. Reboot
-6. Clone the repository into `~/src/`
-7. Install Python 3.11 & pipenv `sudo apt install pipenv`
-8. Change to `~/src/pyrepeater/pyrepeater/`
-9. Run `pipenv install`
+4. Blacklist the headphone driver by editing `/etc/modprobe.d/blacklist-alsa.conf` and adding:
+
+   ```text
+   blacklist snd_bcm2835
+   ```
+
+5. Reboot:
+
+   ```sh
+   sudo reboot
+   ```
+
+6. Clone the repository and install its Python dependencies:
+
+   ```sh
+   mkdir -p ~/src
+   git clone https://github.com/emuehlstein/pyrepeater.git ~/src/pyrepeater
+   cd ~/src/pyrepeater/pyrepeater
+   pipenv install
+   ```
 
 ## configuration
 
 1. Replace the files in the `sounds` directory with WAV files crafted for your repeater.
-2. Copy `pyrepeater/.env.example` to `pyrepeater/.env` and edit the settings to reflect your preferences (see settings below).
+2. Copy the example environment file and edit it to reflect your preferences:
+
+   ```sh
+   cd ~/src/pyrepeater/pyrepeater
+   cp .env.example .env
+   $EDITOR .env
+   ```
    
 ## usage
 
-1. Change to `pyrepeater/pyrepeater`
-2. Run `pipenv shell`
-3. Run `python __init__.py`
+Run the controller from the `pyrepeater` directory:
+
+```sh
+cd ~/src/pyrepeater/pyrepeater
+pipenv run python __init__.py
+```
+
+Press `Ctrl+C` to stop it.
+
+## deployment with ansible
+
+The checked-in Ansible playbook targets `repeaterpi.local` and installs the application as a systemd service. Update `ansible/inventory.yaml` if your Raspberry Pi uses a different hostname or connection settings, then run:
+
+```sh
+cd ~/src/pyrepeater
+ansible-playbook -i ansible/inventory.yaml ansible/site.yaml
+```
+
+After deployment, manage the service on the Raspberry Pi with:
+
+```sh
+sudo systemctl status pyrepeater
+sudo systemctl restart pyrepeater
+sudo journalctl -u pyrepeater -f
+```
 
 ## settings
 
