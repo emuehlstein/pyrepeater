@@ -83,12 +83,12 @@
     state: present
   become: yes
 
-- name: Set USB audio speaker (TX) level to 70%
-  command: amixer set Speaker 70%
+- name: Set USB audio speaker (TX) level to 54% (-17dB, calibrated 2026-09-08)
+  command: amixer set Speaker 54%
   become: yes
   changed_when: false
 
-- name: Set USB audio mic capture level to 100%
+- name: Set USB audio mic capture level to 100% (+23dB, calibrated 2026-09-08)
   command: amixer set Mic cap 100%
   become: yes
   changed_when: false
