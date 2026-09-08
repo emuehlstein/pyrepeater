@@ -1,8 +1,9 @@
 """ decodes and dispatches DTMF remote commands found in completed recordings """
 
+import asyncio
+import asyncio.subprocess
 import logging
 import re
-import subprocess
 import tempfile
 import os
 
@@ -11,7 +12,7 @@ logger = logging.getLogger(__name__)
 DTMF_LINE_RE = re.compile(r"^DTMF:\s*([0-9A-D*#])", re.MULTILINE)
 
 
-def decode_dtmf(wav_file: str) -> str:
+async def decode_dtmf(wav_file: str) -> str:
     """run multimon-ng against a wav file and return the decoded digit string
 
     Applies a 600-1800 Hz bandpass filter before decoding. Without this, wideband
@@ -23,20 +24,29 @@ def decode_dtmf(wav_file: str) -> str:
     with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
         tmp_path = tmp.name
     try:
-        subprocess.run(
-            ["sox", wav_file, tmp_path, "sinc", "600-1800"],
-            check=False,
-            stderr=subprocess.DEVNULL,
+        sox_proc = await asyncio.create_subprocess_exec(
+            "sox",
+            wav_file,
+            tmp_path,
+            "sinc",
+            "600-1800",
+            stderr=asyncio.subprocess.DEVNULL,
         )
-        result = subprocess.run(
-            ["multimon-ng", "-a", "DTMF", "-t", "wav", tmp_path],
-            capture_output=True,
-            text=True,
-            check=False,
+        await sox_proc.wait()
+        decode_proc = await asyncio.create_subprocess_exec(
+            "multimon-ng",
+            "-a",
+            "DTMF",
+            "-t",
+            "wav",
+            tmp_path,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.DEVNULL,
         )
+        stdout, _ = await decode_proc.communicate()
     finally:
         os.unlink(tmp_path)
-    digits = "".join(DTMF_LINE_RE.findall(result.stdout))
+    digits = "".join(DTMF_LINE_RE.findall(stdout.decode(errors="replace")))
     return digits
 
 
@@ -57,7 +67,7 @@ class CommandProcessor:
         if not self.settings.dtmf_commands_enabled:
             return None
 
-        digits = decode_dtmf(wav_file)
+        digits = await decode_dtmf(wav_file)
         if not digits:
             return None
 

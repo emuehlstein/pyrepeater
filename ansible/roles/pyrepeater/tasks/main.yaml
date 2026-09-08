@@ -44,9 +44,9 @@
 
 - name: Install Python dependencies
   pip:
-    requirements: "/opt/pyrepeater/pyrepeater/requirements.txt"
-    virtualenv: /opt/pyrepeater/pyrepeater/venv
-    virtualenv_command: python3.9 -m venve
+    requirements: "/opt/pyrepeater/requirements.txt"
+    virtualenv: /opt/pyrepeater/venv
+    virtualenv_command: python3 -m venv
   become_user: pyrepeater
 
 - name: Copy .env file
@@ -60,7 +60,7 @@
 - name: Copy launch script
   copy:
     src: "../files/launch.sh"
-    dest: "/opt/pyrepeater/pyrepeater/launch.sh"
+    dest: "/opt/pyrepeater/launch.sh"
     mode: "0755"
     owner: "pyrepeater"
     group: "pyrepeater"

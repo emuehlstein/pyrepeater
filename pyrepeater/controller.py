@@ -1,15 +1,24 @@
 """ repeater controller manages the state of the repeater, recordings, and announcements"""
 import logging
-import subprocess
-from dataclasses import dataclass
+import asyncio
+import asyncio.subprocess
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from typing import List
+from pathlib import Path
+from typing import List, Optional
 
-from repeater import Repeater, RepeaterStatus
-from recorder import RecordingManager
-from commands import CommandProcessor
+from .repeater import Repeater
+from .recorder import RecordingManager
+from .commands import CommandProcessor
 
 logger = logging.getLogger(__name__)
+
+SOUNDS_DIR = Path(__file__).resolve().parent / "sounds"
+
+
+def sound(name: str) -> str:
+    """absolute path to a bundled sound file"""
+    return str(SOUNDS_DIR / name)
 
 
 @dataclass
@@ -17,10 +26,10 @@ class SleepStatus:
     """a class to represent sleep status of the repeater ie. it has gone unused for some time"""
 
     sleep: bool = False  # is sleep?
-    start_dt: datetime = datetime.now()  # when did sleep start?
-    end_dt: datetime = None  # when did sleep end?
-    sleep_wait_start: datetime = None  # when did we start waiting for sleep?
-    wake_wait_start: datetime = None  # when did we start waiting for wake?
+    start_dt: datetime = field(default_factory=datetime.now)  # when did sleep start?
+    end_dt: Optional[datetime] = None  # when did sleep end?
+    sleep_wait_start: Optional[datetime] = None  # when did we start waiting for sleep?
+    wake_wait_start: Optional[datetime] = None  # when did we start waiting for wake?
 
 
 @dataclass
@@ -94,8 +103,6 @@ class Controller:
         self.recording_mgr: RecordingManager = None
         self.sleep_mgr: SleepManager = None
         self.command_processor: CommandProcessor = None
-        self.sleep_status: SleepStatus = (SleepStatus(),)
-        self.repeater_status: RepeaterStatus = (RepeaterStatus(),)
         self.status: ControllerStatus = ControllerStatus(
             last_id=datetime(1970, 1, 1),
             last_announcement=datetime(1970, 1, 1),
@@ -111,35 +118,39 @@ class Controller:
         self.recording_mgr = RecordingManager(self.repeater, self.settings)
         self.command_processor = CommandProcessor(self.settings)
 
-        # main controller loop
-        while True:
-            # check the repeater status
-            await self.repeater.check_status()
+        # main controller loop; failsafe guarantees PTT is dropped on any exit
+        try:
+            while True:
+                # check the repeater status
+                await self.repeater.check_status()
 
-            # update the recording status
-            finished_recording = await self.recording_mgr.update_status()
+                # update the recording status
+                finished_recording = await self.recording_mgr.update_status()
 
-            if finished_recording:
-                command = await self.command_processor.process_recording(
-                    finished_recording
-                )
-                if command:
-                    # command transmissions are control-only, not parroted back
-                    await self.execute_command(command)
-                elif self.status.parrot_mode:
-                    # in parrot mode, play back the just-finished recording (range testing)
-                    logger.info(
-                        "Parrot mode: queueing playback of %s", finished_recording
+                if finished_recording:
+                    command = await self.command_processor.process_recording(
+                        finished_recording
                     )
-                    self.status.pending_messages.append(finished_recording)
+                    if command:
+                        # command transmissions are control-only, not parroted back
+                        await self.execute_command(command)
+                    elif self.status.parrot_mode:
+                        # in parrot mode, play back the just-finished recording (range testing)
+                        logger.info(
+                            "Parrot mode: queueing playback of %s", finished_recording
+                        )
+                        self.status.pending_messages.append(finished_recording)
 
-            # check for timed events (ex. annoucements and CW ID)
-            await self.check_for_timed_events()
+                # check for timed events (ex. annoucements and CW ID)
+                await self.check_for_timed_events()
 
-            # otherwise, if repeater is not busy, play pending messages
-            if not await self.repeater.is_busy() and self.status.pending_messages:
-                await self.play_pending_messages(self.status.pending_messages)
-                await self.repeater.serial_disable_tx(self.repeater)
+                # otherwise, if repeater is not busy, play pending messages
+                if not await self.repeater.is_busy() and self.status.pending_messages:
+                    await self.play_pending_messages(self.status.pending_messages)
+
+                await asyncio.sleep(0.05)
+        finally:
+            await self.repeater.serial_disable_tx()
 
     async def play_pending_messages(self, wav_files: List[str]) -> None:
         """play the list of wav files in pending_messages"""
@@ -149,21 +160,24 @@ class Controller:
 
         logger.debug("Playing pending messages...")
 
-        # start tx
-        await self.repeater.serial_enable_tx(self.repeater)
+        # start tx; ensure PTT is always released even if playback fails
+        await self.repeater.serial_enable_tx()
 
-        for message in wav_files:
-            # play the wav file
-            logger.info("Playing wav file: %s", message)
-            subprocess.run(
-                ["play", "-q", message],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                check=False,
-            )
-
-        # stop tx
-        await self.repeater.serial_disable_tx(self.repeater)
+        try:
+            for message in wav_files:
+                # play the wav file
+                logger.info("Playing wav file: %s", message)
+                proc = await asyncio.create_subprocess_exec(
+                    "play",
+                    "-q",
+                    message,
+                    stdout=asyncio.subprocess.DEVNULL,
+                    stderr=asyncio.subprocess.DEVNULL,
+                )
+                await proc.wait()
+        finally:
+            # stop tx
+            await self.repeater.serial_disable_tx(self.repeater)
 
         logger.debug("Done playing pending messages.  Clearing queue...")
         self.status.pending_messages.clear()
@@ -184,9 +198,9 @@ class Controller:
                 "Last announcement was over %s mins ago.  Playing announcement.",
                 self.settings.rpt_info_mins,
             )
-            self.status.pending_messages.append("sounds/repeater_info.wav")
+            self.status.pending_messages.append(sound("repeater_info.wav"))
             self.status.last_announcement = datetime.now()
-            self.status.pending_messages.append("sounds/cw_id.wav")
+            self.status.pending_messages.append(sound("cw_id.wav"))
             self.status.last_id = datetime.now()
 
     async def cwid_timer(self) -> None:
@@ -206,7 +220,7 @@ class Controller:
                 "Last CW ID was over %s minutes ago.  Playing ID.",
                 self.settings.id_mins,
             )
-            self.status.pending_messages.append("sounds/cw_id.wav")
+            self.status.pending_messages.append(sound("cw_id.wav"))
             self.status.last_id = datetime.now()
 
     async def check_for_timed_events(self) -> None:
@@ -217,31 +231,22 @@ class Controller:
 
     async def execute_command(self, command: str) -> None:
         """execute a remote DTMF command"""
-        if command not in (
-            "parrot_toggle",
-            "force_id",
-            "sleep_toggle",
-            "status",
-        ):
-            logger.warning("Unknown DTMF command: %s", command)
-            return
-
         # audible confirmation that the command was received, played before the
         # command's own result announcement (if any)
-        self.status.pending_messages.append("sounds/command_ack.wav")
+        self.status.pending_messages.append(sound("command_ack.wav"))
 
         if command == "parrot_toggle":
             self.status.parrot_mode = not self.status.parrot_mode
             logger.info("DTMF command: parrot mode now %s", self.status.parrot_mode)
             announcement = (
-                "sounds/parrot_mode_on.wav"
+                "parrot_mode_on.wav"
                 if self.status.parrot_mode
-                else "sounds/parrot_mode_off.wav"
+                else "parrot_mode_off.wav"
             )
-            self.status.pending_messages.append(announcement)
+            self.status.pending_messages.append(sound(announcement))
         elif command == "force_id":
             logger.info("DTMF command: forcing CW ID")
-            self.status.pending_messages.append("sounds/cw_id.wav")
+            self.status.pending_messages.append(sound("cw_id.wav"))
             self.status.last_id = datetime.now()
         elif command == "sleep_toggle":
             await self.sleep_mgr.force_toggle()
@@ -250,5 +255,7 @@ class Controller:
             )
         elif command == "status":
             logger.info("DTMF command: playing status announcement")
-            self.status.pending_messages.append("sounds/repeater_info.wav")
+            self.status.pending_messages.append(sound("repeater_info.wav"))
             self.status.last_announcement = datetime.now()
+        else:
+            logger.warning("Unknown DTMF command: %s", command)

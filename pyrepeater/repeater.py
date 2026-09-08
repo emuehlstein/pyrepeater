@@ -4,7 +4,7 @@ via a serial port
 """
 
 import asyncio
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 import logging
 
@@ -21,7 +21,7 @@ class RepeaterStatus:
     """
 
     busy: bool = False
-    last_rcvd_dt: datetime = datetime.now()
+    last_rcvd_dt: datetime = field(default_factory=datetime.now)
 
 
 class Repeater:
@@ -41,8 +41,6 @@ class Repeater:
         except Exception as err:
             logger.error("Unable to open serial port with error: %s", err)
             raise err
-
-        self.settings = settings
 
     async def check_status(self) -> None:
         """
@@ -66,28 +64,24 @@ class Repeater:
         """
         return self.serial.dsr
 
-    async def serial_enable_tx(self, repeater) -> None:
+    async def serial_enable_tx(self) -> None:
         """
         enable the serial port for transmit
         """
         try:
-            ser = repeater.serial
-            ser.setDTR(True)
-            ser.setRTS(True)
+            self.serial.setDTR(True)
+            self.serial.setRTS(True)
             await asyncio.sleep(self.settings.pre_tx_delay)
         except Exception as err:
             logger.error("Unable to set serial port for transmit with error: %s", err)
-        return
 
-    async def serial_disable_tx(self, repeater) -> None:
+    async def serial_disable_tx(self) -> None:
         """
         disable the serial port for transmit
         """
         try:
-            ser = repeater.serial
-            ser.setDTR(False)
-            ser.setRTS(False)
+            self.serial.setDTR(False)
+            self.serial.setRTS(False)
             await asyncio.sleep(self.settings.post_tx_delay)
         except Exception as err:
             logger.error("Unable to set serial port end transmit with error: %s", err)
-        return

@@ -46,28 +46,28 @@ tested with:
    ```sh
    mkdir -p ~/src
    git clone https://github.com/emuehlstein/pyrepeater.git ~/src/pyrepeater
-   cd ~/src/pyrepeater/pyrepeater
+   cd ~/src/pyrepeater
    pipenv install
    ```
 
 ## configuration
 
-1. Replace the files in the `sounds` directory with WAV files crafted for your repeater.
+1. Replace the files in the `pyrepeater/sounds` directory with WAV files crafted for your repeater.
 2. Copy the example environment file and edit it to reflect your preferences:
 
    ```sh
-   cd ~/src/pyrepeater/pyrepeater
-   cp .env.example .env
-   $EDITOR .env
+   cd ~/src/pyrepeater
+   cp pyrepeater/.env.example pyrepeater/.env
+   $EDITOR pyrepeater/.env
    ```
    
 ## usage
 
-Run the controller from the `pyrepeater` directory:
+Run the controller from the repository root:
 
 ```sh
-cd ~/src/pyrepeater/pyrepeater
-pipenv run python __init__.py
+cd ~/src/pyrepeater
+pipenv run python -m pyrepeater
 ```
 
 Press `Ctrl+C` to stop it.

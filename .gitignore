@@ -6,3 +6,7 @@
 
 # Ignore all files in the recordings directory
 pyrepeater/recordings/*
+
+# Ignore Python bytecode caches
+__pycache__/
+*.pyc

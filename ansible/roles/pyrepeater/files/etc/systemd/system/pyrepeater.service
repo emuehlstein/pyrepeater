@@ -5,8 +5,8 @@ After=network.target
 [Service]
 User=pyrepeater
 Group=pyrepeater
-WorkingDirectory=/opt/pyrepeater/pyrepeater/
-ExecStart=/opt/pyrepeater/pyrepeater/launch.sh
+WorkingDirectory=/opt/pyrepeater/
+ExecStart=/opt/pyrepeater/launch.sh
 Restart=on-failure
 
 [Install]
