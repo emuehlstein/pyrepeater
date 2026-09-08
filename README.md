@@ -84,10 +84,12 @@ Transmit one of the configured sequences below to run a command:
 | `913` | Toggle sleep | Forces the repeater into or out of sleep mode. |
 | `914` | Status | Queues the repeater information announcement. |
 
-Recognized commands play `sounds/command_ack.wav` as an audible confirmation and
-are not played back as recordings. The default sequences can be changed in
-`.env`; command matching is exact, and the current implementation does not
-provide PIN protection.
+Recognized commands play `sounds/command_ack.wav` as an audible confirmation
+before any command-specific result, and are not played back as recordings.
+Toggling parrot mode follows the ack with `sounds/parrot_mode_on.wav` or
+`sounds/parrot_mode_off.wav` to announce the new state. The default sequences
+can be changed in `.env`; command matching is exact, and the current
+implementation does not provide PIN protection.
 
 ## deployment with ansible
 

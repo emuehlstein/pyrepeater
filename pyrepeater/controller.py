@@ -217,9 +217,28 @@ class Controller:
 
     async def execute_command(self, command: str) -> None:
         """execute a remote DTMF command"""
+        if command not in (
+            "parrot_toggle",
+            "force_id",
+            "sleep_toggle",
+            "status",
+        ):
+            logger.warning("Unknown DTMF command: %s", command)
+            return
+
+        # audible confirmation that the command was received, played before the
+        # command's own result announcement (if any)
+        self.status.pending_messages.append("sounds/command_ack.wav")
+
         if command == "parrot_toggle":
             self.status.parrot_mode = not self.status.parrot_mode
             logger.info("DTMF command: parrot mode now %s", self.status.parrot_mode)
+            announcement = (
+                "sounds/parrot_mode_on.wav"
+                if self.status.parrot_mode
+                else "sounds/parrot_mode_off.wav"
+            )
+            self.status.pending_messages.append(announcement)
         elif command == "force_id":
             logger.info("DTMF command: forcing CW ID")
             self.status.pending_messages.append("sounds/cw_id.wav")
@@ -233,9 +252,3 @@ class Controller:
             logger.info("DTMF command: playing status announcement")
             self.status.pending_messages.append("sounds/repeater_info.wav")
             self.status.last_announcement = datetime.now()
-        else:
-            logger.warning("Unknown DTMF command: %s", command)
-            return
-
-        # audible confirmation that the command was received and executed
-        self.status.pending_messages.append("sounds/command_ack.wav")
