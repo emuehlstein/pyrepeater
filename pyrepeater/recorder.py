@@ -27,12 +27,18 @@ class RecordingManager:
         self.repeater = repeater
         self.settings = settings
 
-    async def update_status(self) -> None:
-        """if repeater is busy, start recording, if it becomes free, stop recording"""
+    async def update_status(self) -> str | None:
+        """
+        if repeater is busy, start recording, if it becomes free, stop recording
+
+        returns the file name of a just-completed recording (kept, not deleted
+        for being too short), or None if no recording just finished
+        """
         if await self.repeater.is_busy() and not self.recording:
             await self.start_recording()
         elif not await self.repeater.is_busy() and self.recording:
-            await self.stop_recording()
+            return await self.stop_recording()
+        return None
 
     async def is_recording(self) -> bool:
         """is the recorder recording?"""
@@ -53,10 +59,10 @@ class RecordingManager:
             proc=process, start_time=current_time, file_name=recording_name
         )
 
-    async def stop_recording(self) -> None:
-        """stop the recording"""
+    async def stop_recording(self) -> str | None:
+        """stop the recording, returning the file name if it was kept"""
         if not self.recording:
-            return
+            return None
 
         # check how long the recording was
         recording_time = timedelta.total_seconds(
@@ -68,17 +74,19 @@ class RecordingManager:
 
         logger.debug("Stopped recording. (%s s)", recording_time)
 
+        file_name = self.recording.file_name
+
         # if recording was less than min_rec_secs, delete it
         if recording_time < self.settings.min_rec_secs:
             logger.debug(
                 "Recording was less than %s seconds.  Deleting recording.",
                 self.settings.min_rec_secs,
             )
-            subprocess.run(["rm", "-f", self.recording.file_name], check=False)
+            subprocess.run(["rm", "-f", file_name], check=False)
+            file_name = None
 
         else:
-            logger.info(
-                "Recorded %s secs to %s", recording_time, self.recording.file_name
-            )
+            logger.info("Recorded %s secs to %s", recording_time, file_name)
 
         self.recording = None
+        return file_name

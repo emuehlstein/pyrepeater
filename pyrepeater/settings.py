@@ -27,6 +27,7 @@ class ControllerSettings(BaseSettings):
     sleep_after_mins: int = 10  # minutes of inactivity before sleep
     wake_after_sec: int = 2  # seconds of activity before leaving sleep
     min_rec_secs: int = 2  # minimum seconds to record
+    parrot_mode: bool = False  # play back recordings after each transmission
 
     class Settings(BaseSettings):
         """settings for settings"""

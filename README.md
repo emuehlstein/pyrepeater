@@ -82,6 +82,9 @@ the pipenv virtual environment
 - `MIN_REC_SEC=2`
    - minimum seconds for a valid recording (WAV file will be deleted if it does not exceed this length)
 
+- `PARROT_MODE=False`
+   - when enabled, the repeater plays back each recorded transmission immediately after it ends, useful for range testing while mobile
+
 
 ## roadmap
 - repeater modes (day/night/net)

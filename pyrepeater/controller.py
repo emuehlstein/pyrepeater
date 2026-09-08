@@ -104,7 +104,12 @@ class Controller:
             await self.repeater.check_status()
 
             # update the recording status
-            await self.recording_mgr.update_status()
+            finished_recording = await self.recording_mgr.update_status()
+
+            # in parrot mode, play back the just-finished recording (range testing)
+            if finished_recording and self.settings.parrot_mode:
+                logger.info("Parrot mode: queueing playback of %s", finished_recording)
+                self.status.pending_messages.append(finished_recording)
 
             # check for timed events (ex. annoucements and CW ID)
             await self.check_for_timed_events()
