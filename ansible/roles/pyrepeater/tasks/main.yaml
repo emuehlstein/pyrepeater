@@ -76,3 +76,29 @@
     name: pyrepeater
     enabled: yes
     state: started
+
+- name: Install alsa-utils
+  apt:
+    name: alsa-utils
+    state: present
+  become: yes
+
+- name: Set USB audio speaker (TX) level to 70%
+  command: amixer set Speaker 70%
+  become: yes
+  changed_when: false
+
+- name: Set USB audio mic capture level to 100%
+  command: amixer set Mic cap 100%
+  become: yes
+  changed_when: false
+
+- name: Disable Auto Gain Control
+  command: amixer set 'Auto Gain Control' off
+  become: yes
+  changed_when: false
+
+- name: Persist ALSA levels
+  command: alsactl store
+  become: yes
+  changed_when: false
