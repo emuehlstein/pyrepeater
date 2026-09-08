@@ -4,6 +4,12 @@
     state: present
   become: yes
 
+- name: Install multimon-ng (DTMF decoding for remote commands)
+  apt:
+    name: multimon-ng
+    state: present
+  become: yes
+
 - name: Create pyrepeater user
   user:
     name: pyrepeater

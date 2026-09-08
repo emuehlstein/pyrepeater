@@ -7,6 +7,7 @@ from typing import List
 
 from repeater import Repeater, RepeaterStatus
 from recorder import RecordingManager
+from commands import CommandProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,7 @@ class ControllerStatus:
     last_id: datetime
     last_announcement: datetime
     pending_messages: List[str]
+    parrot_mode: bool = False  # runtime-toggleable, seeded from settings at startup
 
 
 class SleepManager:
@@ -74,6 +76,14 @@ class SleepManager:
         """is the repeater sleeping?"""
         return self.sleep_status.sleep
 
+    async def force_toggle(self) -> None:
+        """force a sleep/wake toggle, bypassing the inactivity timers"""
+        self.sleep_status.sleep = not self.sleep_status.sleep
+        if self.sleep_status.sleep:
+            self.sleep_status.start_dt = datetime.now()
+        else:
+            self.sleep_status.end_dt = datetime.now()
+
 
 class Controller:
     """a class to represent a controller"""
@@ -83,12 +93,14 @@ class Controller:
         self.settings = settings
         self.recording_mgr: RecordingManager = None
         self.sleep_mgr: SleepManager = None
+        self.command_processor: CommandProcessor = None
         self.sleep_status: SleepStatus = (SleepStatus(),)
         self.repeater_status: RepeaterStatus = (RepeaterStatus(),)
         self.status: ControllerStatus = ControllerStatus(
             last_id=datetime(1970, 1, 1),
             last_announcement=datetime(1970, 1, 1),
             pending_messages=[],
+            parrot_mode=settings.parrot_mode,
         )
 
     async def start_controller(self):
@@ -97,6 +109,7 @@ class Controller:
         # create managers
         self.sleep_mgr = SleepManager(self.repeater, self.settings)
         self.recording_mgr = RecordingManager(self.repeater, self.settings)
+        self.command_processor = CommandProcessor(self.settings)
 
         # main controller loop
         while True:
@@ -106,10 +119,19 @@ class Controller:
             # update the recording status
             finished_recording = await self.recording_mgr.update_status()
 
-            # in parrot mode, play back the just-finished recording (range testing)
-            if finished_recording and self.settings.parrot_mode:
-                logger.info("Parrot mode: queueing playback of %s", finished_recording)
-                self.status.pending_messages.append(finished_recording)
+            if finished_recording:
+                command = await self.command_processor.process_recording(
+                    finished_recording
+                )
+                if command:
+                    # command transmissions are control-only, not parroted back
+                    await self.execute_command(command)
+                elif self.status.parrot_mode:
+                    # in parrot mode, play back the just-finished recording (range testing)
+                    logger.info(
+                        "Parrot mode: queueing playback of %s", finished_recording
+                    )
+                    self.status.pending_messages.append(finished_recording)
 
             # check for timed events (ex. annoucements and CW ID)
             await self.check_for_timed_events()
@@ -192,3 +214,28 @@ class Controller:
         await self.sleep_mgr.sleep_timer()
         await self.repeaterinfo_timer()
         await self.cwid_timer()
+
+    async def execute_command(self, command: str) -> None:
+        """execute a remote DTMF command"""
+        if command == "parrot_toggle":
+            self.status.parrot_mode = not self.status.parrot_mode
+            logger.info("DTMF command: parrot mode now %s", self.status.parrot_mode)
+        elif command == "force_id":
+            logger.info("DTMF command: forcing CW ID")
+            self.status.pending_messages.append("sounds/cw_id.wav")
+            self.status.last_id = datetime.now()
+        elif command == "sleep_toggle":
+            await self.sleep_mgr.force_toggle()
+            logger.info(
+                "DTMF command: sleep toggled to %s", self.sleep_mgr.sleep_status.sleep
+            )
+        elif command == "status":
+            logger.info("DTMF command: playing status announcement")
+            self.status.pending_messages.append("sounds/repeater_info.wav")
+            self.status.last_announcement = datetime.now()
+        else:
+            logger.warning("Unknown DTMF command: %s", command)
+            return
+
+        # audible confirmation that the command was received and executed
+        self.status.pending_messages.append("sounds/command_ack.wav")
