@@ -87,6 +87,12 @@ class RecordingManager:
 
         else:
             logger.info("Recorded %s secs to %s", recording_time, file_name)
+            # normalize recording to -1dBFS so parrot playback is consistent
+            subprocess.run(
+                ["sox", file_name, "/tmp/norm_tmp.wav", "norm", "-1"],
+                check=False,
+            )
+            subprocess.run(["mv", "/tmp/norm_tmp.wav", file_name], check=False)
 
         self.recording = None
         return file_name
