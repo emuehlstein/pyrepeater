@@ -30,10 +30,10 @@ class ControllerSettings(BaseSettings):
     parrot_mode: bool = False  # play back recordings after each transmission
 
     dtmf_commands_enabled: bool = True  # decode DTMF from recordings for remote control
-    cmd_parrot_toggle: str = "911"  # DTMF digits to toggle parrot mode
-    cmd_force_id: str = "912"  # DTMF digits to force an immediate CW ID
-    cmd_sleep_toggle: str = "913"  # DTMF digits to force sleep/wake toggle
-    cmd_status: str = "914"  # DTMF digits to play the status/announcement message
+    cmd_parrot_toggle: str = "999"  # DTMF digits to toggle parrot mode
+    cmd_force_id: str = "312"  # DTMF digits to force an immediate CW ID
+    cmd_sleep_toggle: str = "73"  # DTMF digits to force sleep/wake toggle
+    cmd_status: str = "311"  # DTMF digits to play the status/announcement message
 
     class Settings(BaseSettings):
         """settings for settings"""

@@ -79,10 +79,10 @@ Transmit one of the configured sequences below to run a command:
 
 | Sequence | Command | Behavior |
 | --- | --- | --- |
-| `911` | Toggle parrot mode | Enables or disables immediate playback of recorded transmissions. |
-| `912` | Force CW ID | Queues an immediate CW identification message. |
-| `913` | Toggle sleep | Forces the repeater into or out of sleep mode. |
-| `914` | Status | Queues the repeater information announcement. |
+| `999` | Toggle parrot mode | Enables or disables immediate playback of recorded transmissions. |
+| `312` | Force CW ID | Queues an immediate CW identification message. |
+| `73` | Toggle sleep | Forces the repeater into or out of sleep mode. |
+| `311` | Status | Queues the repeater information announcement. |
 
 Recognized commands play `sounds/command_ack.wav` as an audible confirmation
 before any command-specific result, and are not played back as recordings.
