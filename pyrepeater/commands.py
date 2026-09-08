@@ -10,13 +10,26 @@ DTMF_LINE_RE = re.compile(r"^DTMF:\s*([0-9A-D*#])", re.MULTILINE)
 
 
 def decode_dtmf(wav_file: str) -> str:
-    """run multimon-ng against a wav file and return the decoded digit string"""
+    """run multimon-ng against a wav file and return the decoded digit string
+
+    Applies a 600-1800 Hz bandpass filter before decoding. Without this, wideband
+    noise from the radio (squelch tail, carrier) swamps the DTMF tones and
+    multimon-ng fails to lock on despite the tones being present in the audio.
+    """
+    # pipe: sox bandpass filter → multimon-ng stdin
+    sox_proc = subprocess.Popen(
+        ["sox", wav_file, "-t", "wav", "-", "sinc", "600-1800"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+    )
     result = subprocess.run(
-        ["multimon-ng", "-a", "DTMF", "-t", "wav", wav_file],
+        ["multimon-ng", "-a", "DTMF", "-t", "wav", "-"],
+        stdin=sox_proc.stdout,
         capture_output=True,
         text=True,
         check=False,
     )
+    sox_proc.wait()
     digits = "".join(DTMF_LINE_RE.findall(result.stdout))
     return digits
 
