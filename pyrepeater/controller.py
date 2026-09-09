@@ -10,6 +10,7 @@ from typing import List, Optional
 from .repeater import Repeater
 from .recorder import RecordingManager
 from .commands import CommandProcessor
+from .httpapi import ControlApi
 
 logger = logging.getLogger(__name__)
 
@@ -103,12 +104,18 @@ class Controller:
         self.recording_mgr: RecordingManager = None
         self.sleep_mgr: SleepManager = None
         self.command_processor: CommandProcessor = None
+        self.control_api: ControlApi = None
         self.status: ControllerStatus = ControllerStatus(
             last_id=datetime(1970, 1, 1),
             last_announcement=datetime(1970, 1, 1),
             pending_messages=[],
             parrot_mode=settings.parrot_mode,
         )
+
+    @staticmethod
+    def sound(name: str) -> str:
+        """absolute path to a bundled sound file (also used by the control API)"""
+        return sound(name)
 
     async def start_controller(self):
         """start the controller"""
@@ -117,6 +124,11 @@ class Controller:
         self.sleep_mgr = SleepManager(self.repeater, self.settings)
         self.recording_mgr = RecordingManager(self.repeater, self.settings)
         self.command_processor = CommandProcessor(self.settings)
+
+        # optional stdlib HTTP control API; never fatal to the repeater
+        if self.settings.http_enabled:
+            self.control_api = ControlApi(self, self.settings)
+            await self.control_api.start()
 
         # main controller loop; failsafe guarantees PTT is dropped on any exit
         try:
@@ -150,6 +162,8 @@ class Controller:
 
                 await asyncio.sleep(0.05)
         finally:
+            if self.control_api:
+                await self.control_api.stop()
             await self.repeater.serial_disable_tx()
 
     async def play_pending_messages(self, wav_files: List[str]) -> None:
@@ -177,7 +191,7 @@ class Controller:
                 await proc.wait()
         finally:
             # stop tx
-            await self.repeater.serial_disable_tx(self.repeater)
+            await self.repeater.serial_disable_tx()
 
         logger.debug("Done playing pending messages.  Clearing queue...")
         self.status.pending_messages.clear()

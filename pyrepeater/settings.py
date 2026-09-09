@@ -37,6 +37,11 @@ class ControllerSettings(BaseSettings):
     min_rec_secs: int = 2  # minimum seconds to record
     parrot_mode: bool = False  # play back recordings after each transmission
 
+    # stdlib HTTP control API (announce/status); bind to LAN/tailnet only
+    http_enabled: bool = True  # serve the local HTTP control API
+    http_host: str = "0.0.0.0"  # interface to bind the control API to
+    http_port: int = 8080  # port for the control API
+
     dtmf_commands_enabled: bool = True  # decode DTMF from recordings for remote control
     cmd_parrot_toggle: str = "999"  # DTMF digits to toggle parrot mode
     cmd_force_id: str = "312"  # DTMF digits to force an immediate CW ID
