@@ -20,6 +20,8 @@ import logging
 from datetime import datetime
 from typing import Optional, Tuple
 
+from .modes import current_mode
+
 logger = logging.getLogger(__name__)
 
 MAX_REQUEST_BYTES = 8192
@@ -125,10 +127,13 @@ class ControlApi:
         if path == "/id" and method in ("GET", "POST"):
             return 200, await self._force_id()
 
+        if path == "/net" and method in ("GET", "POST"):
+            return 200, await self._net_toggle()
+
         if path == "/":
             return 200, {
                 "service": "pyrepeater",
-                "endpoints": ["/status", "/announce", "/id", "/healthz"],
+                "endpoints": ["/status", "/announce", "/id", "/net", "/healthz"],
             }
 
         return 404, {"error": "not found", "path": path}
@@ -147,6 +152,8 @@ class ControlApi:
 
         return {
             "fcc_id": self.settings.fcc_id,
+            "mode": current_mode(self.settings, status.net_mode).value,
+            "net_mode": status.net_mode,
             "busy": await ctlr.repeater.is_busy(),
             "sleeping": sleeping,
             "parrot_mode": status.parrot_mode,
@@ -183,6 +190,13 @@ class ControlApi:
             "queued": ["cw_id.wav"],
             "pending_messages": len(ctlr.status.pending_messages),
         }
+
+    async def _net_toggle(self) -> dict:
+        """toggle net mode, mirroring the DTMF net toggle command"""
+        ctlr = self.controller
+        ctlr.status.net_mode = not ctlr.status.net_mode
+        logger.info("Control API: net mode toggled to %s", ctlr.status.net_mode)
+        return {"net_mode": ctlr.status.net_mode}
 
     # ── response ───────────────────────────────────────────────────
 

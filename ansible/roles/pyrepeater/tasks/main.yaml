@@ -10,6 +10,12 @@
     state: present
   become: yes
 
+- name: Install espeak-ng (TTS for time/weather announcements)
+  apt:
+    name: espeak-ng
+    state: present
+  become: yes
+
 - name: Create pyrepeater user
   user:
     name: pyrepeater

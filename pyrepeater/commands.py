@@ -60,6 +60,7 @@ class CommandProcessor:
             settings.cmd_force_id: "force_id",
             settings.cmd_sleep_toggle: "sleep_toggle",
             settings.cmd_status: "status",
+            settings.cmd_net_toggle: "net_toggle",
         }
 
     async def process_recording(self, wav_file: str) -> str | None:

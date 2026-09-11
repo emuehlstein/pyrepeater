@@ -11,6 +11,8 @@ from .repeater import Repeater
 from .recorder import RecordingManager
 from .commands import CommandProcessor
 from .httpapi import ControlApi
+from .modes import Mode, current_mode
+from .announcer import fetch_weather, build_announcement_text, generate_wav
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +43,8 @@ class ControllerStatus:
     last_announcement: datetime
     pending_messages: List[str]
     parrot_mode: bool = False  # runtime-toggleable, seeded from settings at startup
+    net_mode: bool = False  # runtime-toggleable; overrides day/night mode when set
+    last_time_wx: datetime = field(default_factory=lambda: datetime(1970, 1, 1))
 
 
 class SleepManager:
@@ -51,19 +55,33 @@ class SleepManager:
         self.settings = settings
         self.sleep_status: SleepStatus = SleepStatus()
 
-    async def sleep_timer(self) -> None:
+    async def sleep_timer(self, mode: Mode) -> None:
         """sleep timer, called periodically by the main loop"""
+
+        if mode == Mode.NET:
+            # nets are never interrupted by sleep
+            if self.sleep_status.sleep:
+                logger.info("Leaving sleep state: net mode is active.")
+                self.sleep_status.sleep = False
+                self.sleep_status.end_dt = datetime.now()
+            return
+
+        sleep_after_mins = (
+            self.settings.day_sleep_after_mins
+            if mode == Mode.DAY
+            else self.settings.sleep_after_mins
+        )
 
         # sleep after 'sleep_after_mins' minutes of inactivity
         if not self.sleep_status.sleep and (
             timedelta.total_seconds(
                 datetime.now() - await self.repeater.check_last_rcvd()
             )
-            >= self.settings.sleep_after_mins * 60
+            >= sleep_after_mins * 60
         ):
             logger.info(
                 "Entering sleep state.  Last used over %s mins ago.",
-                self.settings.sleep_after_mins,
+                sleep_after_mins,
             )
             self.sleep_status.sleep = True
             self.sleep_status.start_dt = datetime.now()
@@ -105,6 +123,7 @@ class Controller:
         self.sleep_mgr: SleepManager = None
         self.command_processor: CommandProcessor = None
         self.control_api: ControlApi = None
+        self._time_wx_in_flight = False  # guards against overlapping background fetch/TTS tasks
         self.status: ControllerStatus = ControllerStatus(
             last_id=datetime(1970, 1, 1),
             last_announcement=datetime(1970, 1, 1),
@@ -237,11 +256,58 @@ class Controller:
             self.status.pending_messages.append(sound("cw_id.wav"))
             self.status.last_id = datetime.now()
 
+    async def time_wx_timer(self, mode: Mode) -> None:
+        """
+        on the :30 of each daytime hour, announce the time and weather
+        followed by a CW ID; skipped entirely while asleep
+        """
+        if mode != Mode.DAY or not self.settings.time_wx_enabled:
+            return
+
+        now = datetime.now()
+        if now.minute != 30:
+            return
+
+        already_fired_this_hour = (
+            self.status.last_time_wx.date() == now.date()
+            and self.status.last_time_wx.hour == now.hour
+        )
+        if already_fired_this_hour or self._time_wx_in_flight:
+            return
+
+        if await self.sleep_mgr.is_sleeping():
+            return
+
+        # mark immediately so the ~50ms poll loop doesn't refire while the
+        # background task below is still fetching weather / generating audio
+        self.status.last_time_wx = now
+        self._time_wx_in_flight = True
+        asyncio.create_task(self._play_time_wx_announcement())
+
+    async def _play_time_wx_announcement(self) -> None:
+        """fetch weather, render the announcement wav, and queue it plus a CW ID"""
+        try:
+            weather = await fetch_weather(self.settings.wx_lat, self.settings.wx_lon)
+            text = build_announcement_text(weather)
+            wav_path = SOUNDS_DIR / "_time_wx.wav"
+            if await generate_wav(text, wav_path):
+                logger.info("Queueing time/weather announcement: %s", text)
+                self.status.pending_messages.append(str(wav_path))
+                self.status.pending_messages.append(sound("cw_id.wav"))
+                self.status.last_id = datetime.now()
+            else:
+                logger.warning("Time/weather announcement skipped; wav generation failed")
+        finally:
+            self._time_wx_in_flight = False
+
     async def check_for_timed_events(self) -> None:
         """check for timed events ex. CW ID"""
-        await self.sleep_mgr.sleep_timer()
-        await self.repeaterinfo_timer()
+        mode = current_mode(self.settings, self.status.net_mode)
+        await self.sleep_mgr.sleep_timer(mode)
+        if mode != Mode.NET:
+            await self.repeaterinfo_timer()
         await self.cwid_timer()
+        await self.time_wx_timer(mode)
 
     async def execute_command(self, command: str) -> None:
         """execute a remote DTMF command"""
@@ -271,5 +337,8 @@ class Controller:
             logger.info("DTMF command: playing status announcement")
             self.status.pending_messages.append(sound("repeater_info.wav"))
             self.status.last_announcement = datetime.now()
+        elif command == "net_toggle":
+            self.status.net_mode = not self.status.net_mode
+            logger.info("DTMF command: net mode now %s", self.status.net_mode)
         else:
             logger.warning("Unknown DTMF command: %s", command)

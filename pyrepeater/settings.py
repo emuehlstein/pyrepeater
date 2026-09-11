@@ -47,3 +47,14 @@ class ControllerSettings(BaseSettings):
     cmd_force_id: str = "312"  # DTMF digits to force an immediate CW ID
     cmd_sleep_toggle: str = "73"  # DTMF digits to force sleep/wake toggle
     cmd_status: str = "311"  # DTMF digits to play the status/announcement message
+    cmd_net_toggle: str = "556"  # DTMF digits to toggle net mode
+
+    # day/night/net modes
+    day_start: str = "07:00"  # HH:MM, local time, start of day mode
+    day_end: str = "22:00"  # HH:MM, local time, start of night mode
+    day_sleep_after_mins: int = 240  # minutes of inactivity before sleep, during the day
+
+    # daytime time+weather announcement (on the :30 of each hour)
+    time_wx_enabled: bool = True  # announce time/weather + CW ID at :30 during the day
+    wx_lat: float = 0.0  # latitude for NWS weather lookup
+    wx_lon: float = 0.0  # longitude for NWS weather lookup
